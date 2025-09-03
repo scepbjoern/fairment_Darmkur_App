@@ -1,6 +1,12 @@
 version: "3.9"
 
 services:
+  netcheck:
+    build:
+      context: ..
+      dockerfile: Dockerfile.netcheck
+    networks: host
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -23,7 +29,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-      network: fairment_network
+      network: host
     restart: unless-stopped
     environment:
       NODE_ENV: production
