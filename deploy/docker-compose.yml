@@ -23,7 +23,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
-      network: host
+      network: fairment_network
     restart: unless-stopped
     environment:
       NODE_ENV: production
