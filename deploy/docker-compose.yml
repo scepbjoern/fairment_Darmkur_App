@@ -23,6 +23,7 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      network: host
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -33,3 +34,10 @@ services:
       - db
     ports:
       - "${APP_PORT:-3000}:3000"
+
+networks:
+  default:
+    name: fairment_network
+    ipam:
+      config:
+        - subnet: 172.40.20.0/24

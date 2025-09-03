@@ -6,7 +6,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma
-RUN npx prisma generate
+# Prisma Generate wird zur Runtime ausgeführt, um Build-Zeit-Netzwerkabhängigkeiten zu vermeiden
+# RUN npx prisma generate
 
 COPY . .
 RUN npm run build
@@ -27,4 +28,4 @@ COPY --from=build /app/package*.json ./
 
 USER node
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy || npx prisma db push; npm run start"
+CMD sh -c "npx prisma generate && (npx prisma migrate deploy || npx prisma db push); npm run start"
