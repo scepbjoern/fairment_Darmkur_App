@@ -6,7 +6,7 @@ services:
       context: ..
       dockerfile: Dockerfile.netcheck
     networks:
-      - host
+      - fairment_network
 
   db:
     image: postgres:16-alpine
