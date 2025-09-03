@@ -57,7 +57,11 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/package*.json ./
+COPY --from=build /app/deploy/entrypoint.sh ./entrypoint.sh
+
+# Ensure entrypoint is executable before switching to non-root user
+RUN chmod +x ./entrypoint.sh
 
 USER node
 EXPOSE 3000
-CMD sh -c "npx prisma migrate deploy || npx prisma db push; npm run start"
+CMD ["./entrypoint.sh"]
