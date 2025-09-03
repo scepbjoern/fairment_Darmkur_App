@@ -1,33 +1,48 @@
 # ---- Build stage ----
-    FROM node:22-alpine AS build
+    FROM node:22-bookworm-slim AS build
     WORKDIR /app
     
-    # Install deps
+    # OS Pakete updaten + benötigte Pakete installieren
+    ARG DEBIAN_FRONTEND=noninteractive
+    RUN apt-get update \
+     && apt-get -y upgrade \
+     && apt-get install -y --no-install-recommends openssl ca-certificates \
+     && rm -rf /var/lib/apt/lists/*
+    
     COPY package*.json ./
     RUN npm ci
     
-    # Prisma client generate (keine DB-Verbindung nötig)
     COPY prisma ./prisma
     RUN npx prisma generate
     
-    # Copy source und build
     COPY . .
     RUN npm run build
     
     # ---- Runtime stage ----
-    FROM node:22-alpine AS runner
+    FROM node:22-bookworm-slim AS runner
     WORKDIR /app
     ENV NODE_ENV=production
     ENV PORT=3000
     
-    # node_modules und Build-Artefakte übernehmen
+    # OS Pakete updaten + benötigte Pakete installieren
+    ARG DEBIAN_FRONTEND=noninteractive
+    RUN apt-get update \
+     && apt-get -y upgrade \
+     && apt-get install -y --no-install-recommends openssl ca-certificates \
+     && rm -rf /var/lib/apt/lists/*
+    
+    # Artefakte übernehmen
     COPY --from=build /app/node_modules ./node_modules
     COPY --from=build /app/.next ./.next
     COPY --from=build /app/public ./public
     COPY --from=build /app/prisma ./prisma
     COPY --from=build /app/package*.json ./
     
-    EXPOSE 3000
+    # Dev-Dependencies entfernen (reduziert Angriffsfläche/CVEs)
+    RUN npm prune --omit=dev
     
-    # Start: versucht Migrationen auszuführen, sonst Schema pushen, dann App starten
+    # Non-root User
+    USER node
+    
+    EXPOSE 3000
     CMD sh -c "npx prisma migrate deploy || npx prisma db push; npm run start"
