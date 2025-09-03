@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { NoteType } from '@prisma/client'
+
+// Local NoteType definitions to avoid build-time dependency on generated Prisma enums
+const NoteTypes = ['MEAL', 'REFLECTION'] as const
+export type NoteType = typeof NoteTypes[number]
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
@@ -11,7 +14,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   const type = String(body?.type || '') as NoteType
   const text = String(body?.text || '').trim()
   const time = body?.time ? String(body.time) : undefined
-  if (!Object.values(NoteType).includes(type)) return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+  if (!NoteTypes.includes(type)) return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
   if (!text) return NextResponse.json({ error: 'Text required' }, { status: 400 })
 
   // occurredAt = day.date with optional HH:MM
@@ -34,6 +37,6 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   })
 
   const noteRows = await prisma.dayNote.findMany({ where: { dayEntryId: day.id }, orderBy: { occurredAt: 'asc' } })
-  const notes = noteRows.map(n => ({ id: n.id, dayId: n.dayEntryId, type: n.type as NoteType, time: n.occurredAt?.toISOString().slice(11, 16), text: n.text ?? '' }))
+  const notes = noteRows.map((n: any) => ({ id: n.id, dayId: n.dayEntryId, type: (n.type as unknown as NoteType), time: n.occurredAt?.toISOString().slice(11, 16), text: n.text ?? '' }))
   return NextResponse.json({ ok: true, note: { id: note.id }, notes })
 }

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { CareCategory, Phase, NoteType } from '@prisma/client'
+
+// Local enums to avoid build-time dependency on generated Prisma enums
+const Phases = ['PHASE_1', 'PHASE_2', 'PHASE_3'] as const
+export type Phase = typeof Phases[number]
+const CareCategories = ['SANFT', 'MEDIUM', 'INTENSIV'] as const
+export type CareCategory = typeof CareCategories[number]
+const NoteTypes = ['MEAL', 'REFLECTION'] as const
+export type NoteType = typeof NoteTypes[number]
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -29,14 +36,14 @@ export async function GET(req: NextRequest) {
       data: {
         userId: user.id,
         date: start,
-        phase: Phase.PHASE_1,
-        careCategory: prev?.careCategory ?? CareCategory.SANFT,
+        phase: 'PHASE_1',
+        careCategory: (prev?.careCategory ?? 'SANFT') as CareCategory,
       },
     })
   }
 
   // Load habits (standard + user)
-  const habits = await prisma.habit.findMany({
+  const habits: { id: string; title: string }[] = await prisma.habit.findMany({
     where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] },
     orderBy: { sortIndex: 'asc' },
     select: { id: true, title: true },
@@ -51,18 +58,18 @@ export async function GET(req: NextRequest) {
   const stoolRow = await prisma.stoolScore.findUnique({ where: { dayEntryId: day.id } })
 
   // Load ticks
-  const tickRows = await prisma.habitTick.findMany({ where: { dayEntryId: day.id } })
-  const ticks = habits.map(h => {
-    const t = tickRows.find(x => x.habitId === h.id)
+  const tickRows: { habitId: string; checked: boolean }[] = await prisma.habitTick.findMany({ where: { dayEntryId: day.id } })
+  const ticks = habits.map((h: { id: string }) => {
+    const t = tickRows.find((x: { habitId: string; checked: boolean }) => x.habitId === h.id)
     return { habitId: h.id, checked: Boolean(t?.checked) }
   })
 
   // Load notes
   const noteRows = await prisma.dayNote.findMany({ where: { dayEntryId: day.id }, orderBy: { occurredAt: 'asc' } })
-  const notes = noteRows.map(n => ({
+  const notes = noteRows.map((n: any) => ({
     id: n.id,
     dayId: n.dayEntryId,
-    type: n.type as NoteType,
+    type: (n.type as unknown as NoteType),
     time: n.occurredAt?.toISOString().slice(11, 16),
     text: n.text ?? '',
   }))
@@ -86,7 +93,7 @@ export async function GET(req: NextRequest) {
 }
 
 function getDayRange(ymd: string) {
-  const [y, m, d] = ymd.split('-').map(n => parseInt(n, 10))
+  const [y, m, d] = ymd.split('-').map((n: string) => parseInt(n, 10))
   const start = new Date(y, (m || 1) - 1, d || 1)
   const end = new Date(y, (m || 1) - 1, (d || 1) + 1)
   return { start, end }

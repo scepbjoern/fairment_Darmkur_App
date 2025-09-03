@@ -38,8 +38,8 @@ RUN npm ci --no-audit --no-fund --ignore-scripts --verbose \
      && exit 1)
 
 COPY prisma ./prisma
-# Prisma generate will run at runtime to avoid build-time network flakiness
-# RUN npx prisma generate
+## Generate Prisma client during build so TS types are available for `next build`
+RUN npx prisma generate
 
 COPY . .
 RUN npm run build
@@ -60,4 +60,4 @@ COPY --from=build /app/package*.json ./
 
 USER node
 EXPOSE 3000
-CMD sh -c "npx prisma generate && (npx prisma migrate deploy || npx prisma db push); npm run start"
+CMD sh -c "npx prisma migrate deploy || npx prisma db push; npm run start"

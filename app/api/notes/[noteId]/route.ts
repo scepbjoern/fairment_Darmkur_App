@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { NoteType } from '@prisma/client'
+
+// Local NoteType to avoid build-time dependency on generated Prisma enums
+const NoteTypes = ['MEAL', 'REFLECTION'] as const
+export type NoteType = typeof NoteTypes[number]
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ noteId: string }> }) {
   const { noteId } = await context.params
@@ -17,7 +20,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ noteI
 
   const data: { text?: string | null; type?: NoteType; occurredAt?: Date } = {}
   if (typeof body.text === 'string') data.text = String(body.text).trim()
-  if (typeof body.type === 'string' && (Object.values(NoteType) as string[]).includes(body.type)) {
+  if (typeof body.type === 'string' && (NoteTypes as readonly string[]).includes(body.type)) {
     data.type = body.type as NoteType
   }
   if (body.time !== undefined) {
@@ -34,6 +37,6 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ noteI
   const updated = await prisma.dayNote.update({ where: { id: noteId }, data })
 
   const noteRows = await prisma.dayNote.findMany({ where: { dayEntryId: note.dayEntryId }, orderBy: { occurredAt: 'asc' } })
-  const notes = noteRows.map(n => ({ id: n.id, dayId: n.dayEntryId, type: n.type as NoteType, time: n.occurredAt?.toISOString().slice(11, 16), text: n.text ?? '' }))
+  const notes = noteRows.map((n: any) => ({ id: n.id, dayId: n.dayEntryId, type: (n.type as unknown as NoteType), time: n.occurredAt?.toISOString().slice(11, 16), text: n.text ?? '' }))
   return NextResponse.json({ ok: true, note: { id: updated.id }, notes })
 }
