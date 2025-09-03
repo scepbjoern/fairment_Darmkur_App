@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  @apply bg-background text-gray-100;
+}
+
+.container {
+  @apply mx-auto px-4;
+}
+
+.card {
+  @apply bg-surface rounded-xl border border-slate-800 shadow-sm;
+}
+
+.pill {
+  @apply rounded-pill bg-pill text-gray-200 px-3 py-2 inline-flex items-center justify-center border border-slate-700;
+}
+
+button.pill.active {
+  @apply bg-primary text-black border-transparent;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

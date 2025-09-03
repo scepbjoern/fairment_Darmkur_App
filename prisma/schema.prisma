@@ -1,0 +1,138 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Phase {
+  PHASE_1
+  PHASE_2
+  PHASE_3
+}
+enum CareCategory {
+  SANFT
+  MEDIUM
+  INTENSIV
+}
+enum SymptomType {
+  BESCHWERDEFREIHEIT
+  ENERGIE
+  STIMMUNG
+  SCHLAF
+  ENTSPANNUNG
+  HEISSHUNGERFREIHEIT
+  BEWEGUNG
+}
+enum NoteType {
+  MEAL
+  REFLECTION
+}
+
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  displayName  String?
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  settings     UserSettings?
+  habits       Habit[]
+  days         DayEntry[]
+}
+
+model UserSettings {
+  userId              String  @id
+  user                User    @relation(fields: [userId], references: [id])
+  theme               String  @default("dark")
+  timeFormat24h       Boolean @default(true)
+  weekStart           String  @default("mon")
+  autosaveEnabled     Boolean @default(true)
+  autosaveIntervalSec Int     @default(5)
+}
+
+model Habit {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  title     String
+  isActive  Boolean  @default(true)
+  sortIndex Int      @default(0)
+  ticks     HabitTick[]
+}
+
+model DayEntry {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  date         DateTime
+  phase        Phase
+  careCategory CareCategory
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  symptoms     SymptomScore[]
+  stool        StoolScore?
+  habitTicks   HabitTick[]
+  notesList    DayNote[]
+
+  @@unique([userId, date])
+}
+
+model SymptomScore {
+  id         String      @id @default(uuid())
+  dayEntryId String
+  day        DayEntry    @relation(fields: [dayEntryId], references: [id])
+  type       SymptomType
+  score      Int
+
+  @@unique([dayEntryId, type])
+}
+
+model StoolScore {
+  id         String   @id @default(uuid())
+  dayEntryId String   @unique
+  day        DayEntry @relation(fields: [dayEntryId], references: [id])
+  bristol    Int
+}
+
+model HabitTick {
+  id         String   @id @default(uuid())
+  dayEntryId String
+  day        DayEntry @relation(fields: [dayEntryId], references: [id])
+  habitId    String
+  habit      Habit    @relation(fields: [habitId], references: [id])
+  checked    Boolean  @default(false)
+
+  @@unique([dayEntryId, habitId])
+}
+
+model DayNote {
+  id         String     @id @default(uuid())
+  dayEntryId String
+  day        DayEntry   @relation(fields: [dayEntryId], references: [id])
+  type       NoteType
+  text       String?
+  occurredAt DateTime
+  createdAt  DateTime   @default(now())
+  photos     DayNotePhoto[]
+  reflection ReflectionFields?
+}
+
+model DayNotePhoto {
+  id        String  @id @default(uuid())
+  dayNoteId String
+  note      DayNote @relation(fields: [dayNoteId], references: [id])
+  url       String
+}
+
+model ReflectionFields {
+  id        String  @id @default(uuid())
+  dayNoteId String  @unique
+  note      DayNote @relation(fields: [dayNoteId], references: [id])
+  changed   String?
+  gratitude String?
+  vows      String?
+}
