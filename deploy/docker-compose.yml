@@ -5,7 +5,8 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile.netcheck
-    networks: host
+    networks:
+      - host
 
   db:
     image: postgres:16-alpine
