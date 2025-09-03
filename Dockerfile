@@ -11,19 +11,34 @@ ENV HTTP_PROXY=${HTTP_PROXY} \
     NO_PROXY=${NO_PROXY}
 
 COPY package*.json ./
-# Diagnostics + hardened install to surface errors
-RUN node -v && npm -v \
- && npm config set fetch-retries 5 \
+
+# Show versions
+RUN node -v && npm -v
+
+# Harden npm config and print it
+RUN npm config set fetch-retries 5 \
  && npm config set fetch-retry-maxtimeout 600000 \
+ && npm config set fetch-timeout 600000 \
  && npm config set fund false \
  && npm config set audit false \
  && npm config set registry https://registry.npmjs.org/ \
+ && npm config set prefer-online true \
  && echo "=== npm config list ===" \
- && npm config list \
- && npm ci --no-audit --no-fund --loglevel=verbose
+ && npm config list
+
+# Verify registry reachability during build
+RUN npm ping --registry=https://registry.npmjs.org || true
+
+# Install deps; avoid scripts (Prisma) during build; on failure dump logs and try fallback
+RUN npm ci --no-audit --no-fund --ignore-scripts --verbose \
+ || (echo 'npm ci failed, trying npm install (ignore-scripts) ...' \
+     && npm install --no-audit --no-fund --ignore-scripts --verbose) \
+ || (echo 'Dumping npm logs...' \
+     && (test -d /root/.npm/_logs && find /root/.npm/_logs -type f -name '*.log' -print -exec cat {} \; || true) \
+     && exit 1)
 
 COPY prisma ./prisma
-# Prisma Generate wird zur Runtime ausgeführt, um Build-Zeit-Netzwerkabhängigkeiten zu vermeiden
+# Prisma generate will run at runtime to avoid build-time network flakiness
 # RUN npx prisma generate
 
 COPY . .
