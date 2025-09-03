@@ -2,8 +2,25 @@
 FROM node:22-bookworm AS build
 WORKDIR /app
 
+# Optional Proxy (no effect if not provided)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    NO_PROXY=${NO_PROXY}
+
 COPY package*.json ./
-RUN npm ci
+# Diagnostics + hardened install to surface errors
+RUN node -v && npm -v \
+ && npm config set fetch-retries 5 \
+ && npm config set fetch-retry-maxtimeout 600000 \
+ && npm config set fund false \
+ && npm config set audit false \
+ && npm config set registry https://registry.npmjs.org/ \
+ && echo "=== npm config list ===" \
+ && npm config list \
+ && npm ci --no-audit --no-fund --loglevel=verbose
 
 COPY prisma ./prisma
 # Prisma Generate wird zur Runtime ausgeführt, um Build-Zeit-Netzwerkabhängigkeiten zu vermeiden

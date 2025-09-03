@@ -1,12 +1,6 @@
 version: "3.9"
 
 services:
-  netcheck:
-    build:
-      context: ..
-      dockerfile: Dockerfile.netcheck
-      network: host
-
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -24,6 +18,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      network: host
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Aus Einzelwerten zusammengesetzt, keine Secrets im Repo
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      # optional: NEXT_TELEMETRY_DISABLED: "1"
+    depends_on:
+      - db
+    ports:
+      - "${APP_PORT:-3000}:3000"
 
 networks:
   default:
