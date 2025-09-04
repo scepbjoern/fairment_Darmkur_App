@@ -64,7 +64,7 @@ COPY --from=build /app/deploy/entrypoint.sh ./entrypoint.sh
 # Ensure entrypoint is executable and create writable uploads directory before switching to non-root user
 RUN chmod +x ./entrypoint.sh \
  && mkdir -p /app/public/uploads \
- && chown -R node:node /app/public/uploads
+ && chown -R node:node /app
 
 USER node
 EXPOSE 3000
