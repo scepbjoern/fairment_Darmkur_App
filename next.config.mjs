@@ -9,6 +9,12 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/uploads/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           { key: 'X-DNS-Prefetch-Control', value: 'on' },

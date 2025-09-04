@@ -51,11 +51,65 @@ function fmtHMLocal(iso?: string) {
   return `${hh}:${mm}`
 }
 
+// Simple calendar that shows current month and highlights days with data
+function Calendar(props: { date: string; daysWithData: Set<string>; onSelect: (d: string) => void }) {
+  const { date, daysWithData, onSelect } = props
+  const [y, m, d] = date.split('-').map(n => parseInt(n, 10))
+  const firstOfMonth = new Date(y, (m || 1) - 1, 1)
+  const startWeekDay = (firstOfMonth.getDay() + 6) % 7 // 0=Mon
+  const daysInMonth = new Date(y, (m || 1), 0).getDate()
+  const cells: { ymd: string | null; inMonth: boolean }[] = []
+  // leading blanks
+  for (let i = 0; i < startWeekDay; i++) cells.push({ ymd: null, inMonth: false })
+  // month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const ymdStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    cells.push({ ymd: ymdStr, inMonth: true })
+  }
+  // pad to complete weeks
+  while (cells.length % 7 !== 0) cells.push({ ymd: null, inMonth: false })
+
+  const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+
+  return (
+    <div className="w-full">
+      <div className="grid grid-cols-7 gap-1 mb-2 text-xs text-gray-400">
+        {weekDays.map(wd => (
+          <div key={wd} className="text-center">{wd}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((c, idx) => {
+          if (!c.ymd) return <div key={idx} className="h-8 rounded bg-transparent" />
+          const isSelected = c.ymd === date
+          const hasData = daysWithData.has(c.ymd)
+          return (
+            <button
+              key={c.ymd}
+              className={`h-8 rounded border text-xs flex items-center justify-center ${
+                isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-surface border-slate-700 hover:border-slate-500'
+              }`}
+              onClick={() => onSelect(c.ymd!)}
+              title={c.ymd}
+            >
+              <span className="relative">
+                {parseInt(c.ymd.split('-')[2], 10)}
+                {hasData && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function HeutePage() {
   const [date, setDate] = useState(() => ymd(new Date()))
   const [day, setDay] = useState<Day | null>(null)
   const [habits, setHabits] = useState<Habit[]>([])
   const [notes, setNotes] = useState<DayNote[]>([])
+  const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set())
   const [mealTime, setMealTime] = useState('')
   const [mealText, setMealText] = useState('')
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
@@ -87,6 +141,24 @@ export default function HeutePage() {
       setMealTime(`${hh}:${mm}`)
     }
     load()
+  }, [date])
+
+  // Load calendar markers for the current month of the selected date
+  useEffect(() => {
+    const [y, m] = date.split('-')
+    const ym = `${y}-${m}`
+    let aborted = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/calendar?month=${ym}`, { credentials: 'same-origin' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!aborted) setDaysWithData(new Set<string>(data?.days ?? []))
+      } catch {
+        // ignore
+      }
+    })()
+    return () => { aborted = true }
   }, [date])
 
   async function uploadPhotos(noteId: string, files: FileList) {
@@ -208,109 +280,39 @@ export default function HeutePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Heute</h1>
         <div className="flex items-center gap-2">
-          <button
-            aria-label="Vorheriger Tag"
-            className="pill"
-            onClick={() => setDate(d => shiftDate(d, -1))}
-          >
-            ‹
-          </button>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="bg-surface border border-slate-700 rounded px-2 py-1 text-sm"
-          />
-          <button
-            aria-label="Nächster Tag"
-            className="pill"
-            onClick={() => setDate(d => shiftDate(d, +1))}
-          >
-            ›
-          </button>
+          <button aria-label="Vorheriger Tag" className="pill" onClick={() => setDate(d => shiftDate(d, -1))}>‹</button>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-surface border border-slate-700 rounded px-2 py-1 text-sm" />
+          <button aria-label="Nächster Tag" className="pill" onClick={() => setDate(d => shiftDate(d, +1))}>›</button>
         </div>
+      </div>
+
+      <div className="card p-4 space-y-3">
+        <h2 className="font-medium">Kalender</h2>
+        <Calendar date={date} daysWithData={daysWithData} onSelect={(d) => setDate(d)} />
       </div>
 
       {day && (
         <>
           <div className="card p-4 space-y-3">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Phase</span>
-                {[1, 2, 3].map(p => (
-                  <button
-                    key={p}
-                    className={`pill ${day.phase === `PHASE_${p}` ? 'active' : ''}`}
-                    onClick={() => updateDayMeta({ phase: `PHASE_${p}` as Day['phase'] })}
-                  >
+            <h2 className="font-medium">Tages-Einstellungen</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Phase</span>
+              {[1, 2, 3].map(p => {
+                const key = `PHASE_${p}` as Day['phase']
+                return (
+                  <button key={key} className={`pill ${day.phase === key ? 'active' : ''}`} onClick={() => updateDayMeta({ phase: key })}>
                     {p}
                   </button>
-                ))}
-              </div>
-
-          {viewer && (
-            <div
-              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-              onClick={() => setViewer(null)}
-              onTouchStart={e => setSwipeStartX(e.touches?.[0]?.clientX ?? null)}
-              onTouchEnd={e => {
-                const x = e.changedTouches?.[0]?.clientX
-                if (swipeStartX != null && typeof x === 'number') {
-                  const dx = x - swipeStartX
-                  if (Math.abs(dx) > 40) {
-                    if (dx < 0) goViewer(1)
-                    else goViewer(-1)
-                  }
-                }
-                setSwipeStartX(null)
-              }}
-           >
-              {(() => {
-                const note = notes.find(nn => nn.id === viewer.noteId)
-                const photos = note?.photos || []
-                const current = photos[viewer.index]
-                if (!current) return null
-                return (
-                  <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                    <img src={current.url} alt="Foto" className="max-w-[90vw] max-h-[90vh] object-contain" />
-                    <button
-                      aria-label="Vorheriges Foto"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
-                      onClick={() => goViewer(-1)}
-                    >
-                      ‹
-                    </button>
-                    <button
-                      aria-label="Nächstes Foto"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
-                      onClick={() => goViewer(1)}
-                    >
-                      ›
-                    </button>
-                    <button
-                      aria-label="Schließen"
-                      className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
-                      onClick={() => setViewer(null)}
-                    >
-                      ×
-                    </button>
-                  </div>
                 )
-              })()}
+              })}
             </div>
-          )}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Kategorie</span>
-                {(['SANFT', 'MEDIUM', 'INTENSIV'] as const).map(c => (
-                  <button
-                    key={c}
-                    className={`pill ${day.careCategory === c ? 'active' : ''}`}
-                    onClick={() => updateDayMeta({ careCategory: c })}
-                  >
-                    {c.charAt(0) + c.slice(1).toLowerCase()}
-                  </button>
-                ))}
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Kategorie</span>
+              {(['SANFT', 'MEDIUM', 'INTENSIV'] as const).map(c => (
+                <button key={c} className={`pill ${day.careCategory === c ? 'active' : ''}`} onClick={() => updateDayMeta({ careCategory: c })}>
+                  {c.charAt(0) + c.slice(1).toLowerCase()}
+                </button>
+              ))}
             </div>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
@@ -321,13 +323,7 @@ export default function HeutePage() {
               {symptoms.map(type => (
                 <div key={type} className="space-y-1">
                   <div className="text-sm text-gray-400">{SYMPTOM_LABELS[type]}</div>
-                  <NumberPills
-                    min={1}
-                    max={10}
-                    value={day.symptoms[type]}
-                    onChange={n => updateSymptom(type, n)}
-                    ariaLabel={SYMPTOM_LABELS[type]}
-                  />
+                  <NumberPills min={1} max={10} value={day.symptoms[type]} onChange={n => updateSymptom(type, n)} ariaLabel={SYMPTOM_LABELS[type]} />
                 </div>
               ))}
             </div>
@@ -345,13 +341,7 @@ export default function HeutePage() {
 
           <div className="card p-4 space-y-2">
             <h2 className="font-medium">Bemerkungen</h2>
-            <textarea
-              className="w-full bg-background border border-slate-700 rounded p-2"
-              rows={4}
-              placeholder="Freitext…"
-              defaultValue={day.notes ?? ''}
-              onBlur={e => updateDayMeta({ notes: e.target.value })}
-            />
+            <textarea className="w-full bg-background border border-slate-700 rounded p-2" rows={4} placeholder="Freitext…" defaultValue={day.notes ?? ''} onBlur={e => updateDayMeta({ notes: e.target.value })} />
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
 
@@ -367,28 +357,15 @@ export default function HeutePage() {
                     .sort((a, b) => (a.occurredAtIso || '').localeCompare(b.occurredAtIso || ''))
                     .map(n => (
                       <li key={n.id} className="flex items-start gap-2 text-sm">
-                        <span className="text-gray-400 w-28">
-                          {fmtHMLocal(n.occurredAtIso) + (n.createdAtIso ? ` (${fmtHMLocal(n.createdAtIso)})` : '')}
-                        </span>
+                        <span className="text-gray-400 w-28">{fmtHMLocal(n.occurredAtIso) + (n.createdAtIso ? ` (${fmtHMLocal(n.createdAtIso)})` : '')}</span>
                         <div className="flex-1 space-y-2">
                           <div className="whitespace-pre-wrap text-xs leading-5">{n.text}</div>
                           {n.photos && n.photos.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {n.photos.map((p, idx) => (
                                 <div key={p.id} className="relative group">
-                                  <img
-                                    src={p.url}
-                                    alt="Foto"
-                                    className="w-16 h-16 object-cover rounded border border-slate-700 cursor-zoom-in"
-                                    onClick={() => setViewer({ noteId: n.id, index: idx })}
-                                  />
-                                  <button
-                                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100"
-                                    title="Foto löschen"
-                                    onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}
-                                  >
-                                    ×
-                                  </button>
+                                  <img src={`${p.url}?v=${p.id}`} alt="Foto" className="w-16 h-16 object-cover rounded border border-slate-700 cursor-zoom-in" onClick={() => setViewer({ noteId: n.id, index: idx })} />
+                                  <button className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100" title="Foto löschen" onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}>×</button>
                                 </div>
                               ))}
                             </div>
@@ -396,15 +373,7 @@ export default function HeutePage() {
                           <div>
                             <label className="inline-flex items-center gap-2 text-xs text-gray-400">
                               <span>Fotos hinzufügen</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={e => {
-                                  if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files)
-                                  e.currentTarget.value = ''
-                                }}
-                              />
+                              <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
                             </label>
                           </div>
                         </div>
@@ -414,26 +383,42 @@ export default function HeutePage() {
               )}
             </div>
             <div className="flex items-start gap-2">
-              <input
-                type="time"
-                value={mealTime}
-                onChange={e => setMealTime(e.target.value)}
-                className="bg-background border border-slate-700 rounded px-2 py-1 text-sm"
-              />
-              <textarea
-                value={mealText}
-                onChange={e => setMealText(e.target.value)}
-                placeholder="Beschreibung…"
-                className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm"
-                rows={3}
-              />
-              <button className="pill" onClick={addMealNote} disabled={!mealText.trim()}>
-                Hinzufügen
-              </button>
+              <input type="time" value={mealTime} onChange={e => setMealTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-sm" />
+              <textarea value={mealText} onChange={e => setMealText(e.target.value)} placeholder="Beschreibung…" className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm" rows={3} />
+              <button className="pill" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
             </div>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
         </>
+      )}
+
+      {viewer && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center" onClick={() => setViewer(null)} onTouchStart={e => setSwipeStartX(e.touches?.[0]?.clientX ?? null)} onTouchEnd={e => {
+          const x = e.changedTouches?.[0]?.clientX
+          if (swipeStartX != null && typeof x === 'number') {
+            const dx = x - swipeStartX
+            if (Math.abs(dx) > 40) {
+              if (dx < 0) goViewer(1)
+              else goViewer(-1)
+            }
+          }
+          setSwipeStartX(null)
+        }}>
+          {(() => {
+            const note = notes.find(nn => nn.id === viewer.noteId)
+            const photos = note?.photos || []
+            const current = photos[viewer.index]
+            if (!current) return null
+            return (
+              <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                <img src={`${current.url}?v=${current.id}`} alt="Foto" className="max-w-[90vw] max-h-[90vh] object-contain" />
+                <button aria-label="Vorheriges Foto" className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10" onClick={() => goViewer(-1)}>‹</button>
+                <button aria-label="Nächstes Foto" className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10" onClick={() => goViewer(1)}>›</button>
+                <button aria-label="Schließen" className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10" onClick={() => setViewer(null)}>×</button>
+              </div>
+            )
+          })()}
+        </div>
       )}
     </div>
   )
