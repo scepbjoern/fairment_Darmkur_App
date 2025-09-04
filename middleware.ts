@@ -10,7 +10,12 @@ export function middleware(req: NextRequest) {
     '/sw.js',
     '/favicon.ico',
   ]
-  if (publicPaths.includes(pathname) || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (
+    publicPaths.includes(pathname) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/uploads')
+  ) {
     return NextResponse.next()
   }
 
@@ -27,5 +32,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next|api).*)'],
+  matcher: ['/((?!_next|api|uploads).*)'],
 }

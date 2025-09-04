@@ -29,10 +29,8 @@ RUN npm config set fetch-retries 5 \
 # Verify registry reachability during build
 RUN npm ping --registry=https://registry.npmjs.org || true
 
-# Install deps; avoid scripts (Prisma) during build; on failure dump logs and try fallback
-RUN npm ci --no-audit --no-fund --ignore-scripts --verbose \
- || (echo 'npm ci failed, trying npm install (ignore-scripts) ...' \
-     && npm install --no-audit --no-fund --ignore-scripts --verbose) \
+# Install deps; avoid scripts (Prisma) during build; prefer npm install so package.json versions are honored
+RUN npm install --no-audit --no-fund --ignore-scripts --verbose \
  || (echo 'Dumping npm logs...' \
      && (test -d /root/.npm/_logs && find /root/.npm/_logs -type f -name '*.log' -print -exec cat {} \; || true) \
      && exit 1)
@@ -65,7 +63,6 @@ COPY --from=build /app/deploy/entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh \
  && mkdir -p /app/public/uploads \
  && chown -R node:node /app
-
 USER node
 EXPOSE 3000
 CMD ["./entrypoint.sh"]
