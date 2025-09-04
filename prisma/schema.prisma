@@ -32,6 +32,11 @@ enum NoteType {
   REFLECTION
 }
 
+enum ReflectionKind {
+  WEEK
+  MONTH
+}
+
 model User {
   id           String        @id @default(uuid())
   username     String        @unique
@@ -42,6 +47,7 @@ model User {
   settings     UserSettings?
   habits       Habit[]
   days         DayEntry[]
+  reflections  Reflection[]
 }
 
 model UserSettings {
@@ -136,4 +142,26 @@ model ReflectionFields {
   changed   String?
   gratitude String?
   vows      String?
+}
+
+model Reflection {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  kind      ReflectionKind
+  createdAt DateTime       @default(now())
+  changed   String?
+  gratitude String?
+  vows      String?
+  remarks   String?
+  photos    ReflectionPhoto[]
+
+  @@index([userId, createdAt])
+}
+
+model ReflectionPhoto {
+  id           String      @id @default(uuid())
+  reflectionId String
+  reflection   Reflection  @relation(fields: [reflectionId], references: [id])
+  url          String
 }

@@ -28,6 +28,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <Link href="/" className="font-semibold">Darmkur-Tagebuch-App</Link>
             <nav className="flex items-center gap-4">
               <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
+              <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
               <AuthNav user={user} />
             </nav>
           </div>

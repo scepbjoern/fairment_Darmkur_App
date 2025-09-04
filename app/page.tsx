@@ -115,6 +115,7 @@ export default function HeutePage() {
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
   const [viewer, setViewer] = useState<{ noteId: string; index: number } | null>(null)
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null)
+  const [reflectionDue, setReflectionDue] = useState<{ due: boolean; daysSince: number } | null>(null)
 
   const goViewer = (delta: number) => {
     setViewer(v => {
@@ -142,6 +143,22 @@ export default function HeutePage() {
     }
     load()
   }, [date])
+
+  // Check if a reflection is due (business logic: > 6 Tage)
+  useEffect(() => {
+    let aborted = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/reflections/due', { credentials: 'same-origin' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!aborted) setReflectionDue({ due: !!data.due, daysSince: data.daysSince ?? 0 })
+      } catch {
+        // ignore
+      }
+    })()
+    return () => { aborted = true }
+  }, [])
 
   // Load calendar markers for the current month of the selected date
   useEffect(() => {
@@ -290,6 +307,15 @@ export default function HeutePage() {
         <h2 className="font-medium">Kalender</h2>
         <Calendar date={date} daysWithData={daysWithData} onSelect={(d) => setDate(d)} />
       </div>
+
+      {reflectionDue?.due && (
+        <div className="p-3 rounded border border-amber-500/60 bg-amber-900/20">
+          <div className="text-sm">
+            <span className="font-medium">Reflexion fällig:</span> Es ist {reflectionDue.daysSince} Tage her seit deiner letzten Reflexion.{' '}
+            <a href="/reflections" className="underline">Jetzt eintragen</a>.
+          </div>
+        </div>
+      )}
 
       {day && (
         <>

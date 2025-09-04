@@ -53,5 +53,6 @@ coverage/
 .vercel/
 
 # Uploaded files
-public/uploads
-uploads/
+# Ignore only top-level uploads directory (runtime storage), not app/uploads route code
+/public/uploads
+/uploads/
