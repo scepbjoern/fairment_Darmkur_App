@@ -64,14 +64,22 @@ export async function GET(req: NextRequest) {
     return { habitId: h.id, checked: Boolean(t?.checked) }
   })
 
-  // Load notes
-  const noteRows = await prisma.dayNote.findMany({ where: { dayEntryId: day.id }, orderBy: { occurredAt: 'asc' } })
+  // Load notes incl. tech capture time and photos
+  const noteRows = await prisma.dayNote.findMany({
+    where: { dayEntryId: day.id },
+    orderBy: { occurredAt: 'asc' },
+    include: { photos: true },
+  })
   const notes = noteRows.map((n: any) => ({
     id: n.id,
     dayId: n.dayEntryId,
     type: (n.type as unknown as NoteType),
     time: n.occurredAt?.toISOString().slice(11, 16),
+    techTime: n.createdAt?.toISOString().slice(11, 16),
+    occurredAtIso: n.occurredAt?.toISOString(),
+    createdAtIso: n.createdAt?.toISOString(),
     text: n.text ?? '',
+    photos: (n.photos || []).map((p: any) => ({ id: p.id, url: p.url })),
   }))
 
   const payload = {

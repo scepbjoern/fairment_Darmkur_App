@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import path from 'path'
+import fs from 'fs/promises'
+
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads')
+
+function resolveUploadPathFromUrl(url: string): string | null {
+  // Only allow URLs inside /uploads/ to avoid deleting arbitrary files
+  if (!url || !url.startsWith('/uploads/')) return null
+  const rel = url.replace(/^\/+uploads\//, '')
+  const abs = path.join(UPLOADS_DIR, rel)
+  const normalized = path.normalize(abs)
+  // Ensure the resolved path stays within the uploads directory
+  if (!normalized.startsWith(UPLOADS_DIR)) return null
+  return normalized
+}
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ photoId: string }> }) {
   const { photoId } = await context.params
@@ -16,6 +31,21 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ phot
   if (!photo) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (photo.note.day.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  // Try to remove the physical file as well
+  const filePath = resolveUploadPathFromUrl(photo.url)
+  let fileDeleted = false
+  if (filePath) {
+    try {
+      await fs.unlink(filePath)
+      fileDeleted = true
+    } catch (err: any) {
+      // Ignore if file is already missing; log other errors
+      if (err && err.code !== 'ENOENT') {
+        console.warn('Failed to delete photo file', { filePath, err })
+      }
+    }
+  }
+
   await prisma.dayNotePhoto.delete({ where: { id: photoId } })
-  return NextResponse.json({ ok: true, deleted: photoId })
+  return NextResponse.json({ ok: true, deleted: photoId, fileDeleted })
 }

@@ -34,6 +34,11 @@ services:
       - db
     ports:
       - "${APP_PORT:-3000}:3000"
+    # Ermöglicht, den public/uploads Ordner per ENV zu mappen (z.B. für Persistenz auf dem Host)
+    # Beispiel in .env:
+    #   PUBLIC_UPLOADS_PATH=../public/uploads
+    volumes:
+      - ${PUBLIC_UPLOADS_PATH:-../public/uploads}:/app/public/uploads
 
 networks:
   default:

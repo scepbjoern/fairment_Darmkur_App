@@ -36,7 +36,19 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ noteI
 
   const updated = await prisma.dayNote.update({ where: { id: noteId }, data })
 
-  const noteRows = await prisma.dayNote.findMany({ where: { dayEntryId: note.dayEntryId }, orderBy: { occurredAt: 'asc' } })
-  const notes = noteRows.map((n: any) => ({ id: n.id, dayId: n.dayEntryId, type: (n.type as unknown as NoteType), time: n.occurredAt?.toISOString().slice(11, 16), text: n.text ?? '' }))
+  const noteRows = await prisma.dayNote.findMany({
+    where: { dayEntryId: note.dayEntryId },
+    orderBy: { occurredAt: 'asc' },
+    include: { photos: true },
+  })
+  const notes = noteRows.map((n: any) => ({
+    id: n.id,
+    dayId: n.dayEntryId,
+    type: (n.type as unknown as NoteType),
+    time: n.occurredAt?.toISOString().slice(11, 16),
+    techTime: n.createdAt?.toISOString().slice(11, 16),
+    text: n.text ?? '',
+    photos: (n.photos || []).map((p: any) => ({ id: p.id, url: p.url })),
+  }))
   return NextResponse.json({ ok: true, note: { id: updated.id }, notes })
 }

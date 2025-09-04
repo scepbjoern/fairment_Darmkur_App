@@ -32,11 +32,23 @@ type DayNote = {
   dayId: string
   type: 'MEAL' | 'REFLECTION'
   time?: string
+  techTime?: string
   text: string
+  photos?: { id: string; url: string }[]
+  occurredAtIso?: string
+  createdAtIso?: string
 }
 
 function ymd(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function fmtHMLocal(iso?: string) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
 }
 
 export default function HeutePage() {
@@ -47,17 +59,59 @@ export default function HeutePage() {
   const [mealTime, setMealTime] = useState('')
   const [mealText, setMealText] = useState('')
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
+  const [viewer, setViewer] = useState<{ noteId: string; index: number } | null>(null)
+  const [swipeStartX, setSwipeStartX] = useState<number | null>(null)
+
+  const goViewer = (delta: number) => {
+    setViewer(v => {
+      if (!v) return null
+      const note = notes.find(nn => nn.id === v.noteId)
+      const photos = note?.photos || []
+      if (photos.length === 0) return v
+      const nextIdx = (v.index + delta + photos.length) % photos.length
+      return { ...v, index: nextIdx }
+    })
+  }
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/day?date=${date}`)
+      const res = await fetch(`/api/day?date=${date}`, { credentials: 'same-origin' })
       const data = await res.json()
       setDay(data.day)
       setHabits(data.habits)
       setNotes(data.notes ?? [])
+      // Prefill current time (HH:MM) when date changes or page loads
+      const now = new Date()
+      const hh = String(now.getHours()).padStart(2, '0')
+      const mm = String(now.getMinutes()).padStart(2, '0')
+      setMealTime(`${hh}:${mm}`)
     }
     load()
   }, [date])
+
+  async function uploadPhotos(noteId: string, files: FileList) {
+    try {
+      const formData = new FormData()
+      Array.from(files).forEach(f => formData.append('files', f))
+      const res = await fetch(`/api/notes/${noteId}/photos`, { method: 'POST', body: formData, credentials: 'same-origin' })
+      const data = await res.json()
+      if (data?.notes) setNotes(data.notes)
+    } catch (e) {
+      console.error('Upload failed', e)
+    }
+  }
+
+  async function deletePhoto(photoId: string) {
+    try {
+      const res = await fetch(`/api/photos/${photoId}`, { method: 'DELETE', credentials: 'same-origin' })
+      const data = await res.json()
+      if (data?.ok) {
+        setNotes(prev => prev.map(n => ({ ...n, photos: (n.photos || []).filter(p => p.id !== photoId) })))
+      }
+    } catch (e) {
+      console.error('Delete failed', e)
+    }
+  }
 
   async function updateDayMeta(patch: Partial<Pick<Day, 'phase' | 'careCategory' | 'notes'>>) {
     if (!day) return
@@ -66,6 +120,7 @@ export default function HeutePage() {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
+      credentials: 'same-origin',
     })
     const data = await res.json()
     setDay(data.day)
@@ -79,6 +134,7 @@ export default function HeutePage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, score }),
+      credentials: 'same-origin',
     })
     const data = await res.json()
     setDay(data.day)
@@ -92,6 +148,7 @@ export default function HeutePage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bristol }),
+      credentials: 'same-origin',
     })
     const data = await res.json()
     setDay(data.day)
@@ -105,6 +162,7 @@ export default function HeutePage() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ habitId, checked }),
+      credentials: 'same-origin',
     })
     const data = await res.json()
     setDay(data.day)
@@ -124,12 +182,22 @@ export default function HeutePage() {
     const res = await fetch(`/api/day/${day.id}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'MEAL', time: mealTime || undefined, text: mealText.trim() }),
+      body: JSON.stringify({
+        type: 'MEAL',
+        time: mealTime || undefined,
+        text: mealText.trim(),
+        tzOffsetMinutes: new Date().getTimezoneOffset(),
+      }),
+      credentials: 'same-origin',
     })
     const data = await res.json()
     if (data?.notes) setNotes(data.notes)
     setMealText('')
-    setMealTime('')
+    // Refill with current time for quick subsequent entries
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    setMealTime(`${hh}:${mm}`)
     doneSaving()
   }
 
@@ -179,6 +247,58 @@ export default function HeutePage() {
                   </button>
                 ))}
               </div>
+
+          {viewer && (
+            <div
+              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+              onClick={() => setViewer(null)}
+              onTouchStart={e => setSwipeStartX(e.touches?.[0]?.clientX ?? null)}
+              onTouchEnd={e => {
+                const x = e.changedTouches?.[0]?.clientX
+                if (swipeStartX != null && typeof x === 'number') {
+                  const dx = x - swipeStartX
+                  if (Math.abs(dx) > 40) {
+                    if (dx < 0) goViewer(1)
+                    else goViewer(-1)
+                  }
+                }
+                setSwipeStartX(null)
+              }}
+           >
+              {(() => {
+                const note = notes.find(nn => nn.id === viewer.noteId)
+                const photos = note?.photos || []
+                const current = photos[viewer.index]
+                if (!current) return null
+                return (
+                  <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+                    <img src={current.url} alt="Foto" className="max-w-[90vw] max-h-[90vh] object-contain" />
+                    <button
+                      aria-label="Vorheriges Foto"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
+                      onClick={() => goViewer(-1)}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      aria-label="Nächstes Foto"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
+                      onClick={() => goViewer(1)}
+                    >
+                      ›
+                    </button>
+                    <button
+                      aria-label="Schließen"
+                      className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10"
+                      onClick={() => setViewer(null)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-400">Kategorie</span>
                 {(['SANFT', 'MEDIUM', 'INTENSIV'] as const).map(c => (
@@ -241,32 +361,71 @@ export default function HeutePage() {
               {notes.filter(n => n.type === 'MEAL').length === 0 ? (
                 <div className="text-sm text-gray-400">Noch keine Einträge.</div>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {notes
                     .filter(n => n.type === 'MEAL')
-                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+                    .sort((a, b) => (a.occurredAtIso || '').localeCompare(b.occurredAtIso || ''))
                     .map(n => (
                       <li key={n.id} className="flex items-start gap-2 text-sm">
-                        <span className="text-gray-400 w-12">{n.time || '—'}</span>
-                        <span className="flex-1">{n.text}</span>
+                        <span className="text-gray-400 w-28">
+                          {fmtHMLocal(n.occurredAtIso) + (n.createdAtIso ? ` (${fmtHMLocal(n.createdAtIso)})` : '')}
+                        </span>
+                        <div className="flex-1 space-y-2">
+                          <div className="whitespace-pre-wrap text-xs leading-5">{n.text}</div>
+                          {n.photos && n.photos.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {n.photos.map((p, idx) => (
+                                <div key={p.id} className="relative group">
+                                  <img
+                                    src={p.url}
+                                    alt="Foto"
+                                    className="w-16 h-16 object-cover rounded border border-slate-700 cursor-zoom-in"
+                                    onClick={() => setViewer({ noteId: n.id, index: idx })}
+                                  />
+                                  <button
+                                    className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 text-xs opacity-0 group-hover:opacity-100"
+                                    title="Foto löschen"
+                                    onClick={e => { e.stopPropagation(); deletePhoto(p.id) }}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div>
+                            <label className="inline-flex items-center gap-2 text-xs text-gray-400">
+                              <span>Fotos hinzufügen</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={e => {
+                                  if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files)
+                                  e.currentTarget.value = ''
+                                }}
+                              />
+                            </label>
+                          </div>
+                        </div>
                       </li>
                     ))}
                 </ul>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-start gap-2">
               <input
                 type="time"
                 value={mealTime}
                 onChange={e => setMealTime(e.target.value)}
                 className="bg-background border border-slate-700 rounded px-2 py-1 text-sm"
               />
-              <input
-                type="text"
+              <textarea
                 value={mealText}
                 onChange={e => setMealText(e.target.value)}
                 placeholder="Beschreibung…"
                 className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm"
+                rows={3}
               />
               <button className="pill" onClick={addMealNote} disabled={!mealText.trim()}>
                 Hinzufügen

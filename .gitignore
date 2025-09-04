@@ -51,3 +51,6 @@ coverage/
 # Vercel/Turbo (falls genutzt)
 .turbo/
 .vercel/
+
+# Uploaded files
+public/uploads
