@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur border-b border-slate-800">
           <div className="container h-14 flex items-center justify-between">
-            <Link href="/" className="font-semibold">Heute</Link>
+            <Link href="/" className="font-semibold">Darmkur-Tagebuch-App</Link>
             <nav className="flex items-center gap-4">
               <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
               <AuthNav user={user} />
@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {children}
         </main>
         <footer className="border-t border-slate-800 bg-surface/80">
-          <div className="container py-2 text-xs text-gray-400">Fairment Darmkur – MVP</div>
+          <div className="container py-2 text-xs text-gray-400">Fairment Darmkur Tagebuch App</div>
         </footer>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {

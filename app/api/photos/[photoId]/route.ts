@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
 
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads')
+// Physical uploads base directory (mounted in Docker). Keep in sync with upload API and uploads route.
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')
 
 function resolveUploadPathFromUrl(url: string): string | null {
   // Only allow URLs inside /uploads/ to avoid deleting arbitrary files

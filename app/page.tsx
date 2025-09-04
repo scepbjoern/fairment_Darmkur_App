@@ -278,7 +278,7 @@ export default function HeutePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Heute</h1>
+        <h1 className="text-xl font-semibold">Tagebuch</h1>
         <div className="flex items-center gap-2">
           <button aria-label="Vorheriger Tag" className="pill" onClick={() => setDate(d => shiftDate(d, -1))}>‹</button>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-surface border border-slate-700 rounded px-2 py-1 text-sm" />

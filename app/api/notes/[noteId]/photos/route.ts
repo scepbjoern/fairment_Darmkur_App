@@ -10,8 +10,11 @@ const IMAGE_MAX_HEIGHT = parseInt(process.env.IMAGE_MAX_HEIGHT || '1600', 10)
 const IMAGE_FORMAT = (process.env.IMAGE_FORMAT || 'webp').toLowerCase() as 'webp' | 'png' | 'jpeg'
 const IMAGE_QUALITY = parseInt(process.env.IMAGE_QUALITY || '80', 10)
 
+// Base directory for persisted uploads (mounted in Docker to survive restarts)
+const UPLOADS_BASE = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')
+
 async function ensureUploadDirForUser(userId: string) {
-  const dir = path.join(process.cwd(), 'public', 'uploads', userId)
+  const dir = path.join(UPLOADS_BASE, userId)
   await fs.mkdir(dir, { recursive: true })
   return dir
 }
