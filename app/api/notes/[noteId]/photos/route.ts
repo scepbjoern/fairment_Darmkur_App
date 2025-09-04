@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
+import { constants as fsConstants } from 'fs'
 import sharp from 'sharp'
 
 const IMAGE_MAX_WIDTH = parseInt(process.env.IMAGE_MAX_WIDTH || '1600', 10)
@@ -51,6 +52,12 @@ export async function POST(req: NextRequest, context: { params: Promise<{ noteId
       if (!files || files.length === 0) return NextResponse.json({ error: 'No files' }, { status: 400 })
 
       const uploadDir = await ensureUploadDirForUser(user.id)
+      try {
+        await fs.access(uploadDir, fsConstants.W_OK)
+      } catch {
+        console.error('Upload dir not writable', { uploadDir })
+        return NextResponse.json({ error: 'Upload directory is not writable', uploadDir }, { status: 500 })
+      }
       const ts = nowIsoTime()
       let seq = 0
       for (const file of files) {
