@@ -26,3 +26,21 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   const updated = await prisma.habit.update({ where: { id }, data, select: { id: true, title: true, isActive: true, sortIndex: true } })
   return NextResponse.json({ ok: true, habit: updated })
 }
+
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params
+  const cookieUserId = req.cookies.get('userId')?.value
+  let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
+  if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })
+  if (!user) return NextResponse.json({ error: 'No user' }, { status: 401 })
+
+  const habit = await prisma.habit.findUnique({ where: { id } })
+  if (!habit) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!habit.userId) return NextResponse.json({ error: 'Cannot delete standard habit' }, { status: 403 })
+  if (habit.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // Delete dependent ticks (if any) to avoid FK violations, then the habit
+  await prisma.habitTick.deleteMany({ where: { habitId: id } })
+  await prisma.habit.delete({ where: { id } })
+  return NextResponse.json({ ok: true, deleted: id })
+}

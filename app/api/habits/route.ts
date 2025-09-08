@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const habits = await prisma.habit.findMany({
     where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] },
     orderBy: { sortIndex: 'asc' },
-    select: { id: true, title: true },
+    select: { id: true, title: true, userId: true },
   })
   return NextResponse.json({ habits })
 }
@@ -26,6 +26,6 @@ export async function POST(req: NextRequest) {
 
   const last = await prisma.habit.findFirst({ where: { OR: [{ userId: null }, { userId: user.id }] }, orderBy: { sortIndex: 'desc' }, select: { sortIndex: true } })
   const sortIndex = (last?.sortIndex ?? 0) + 1
-  const habit = await prisma.habit.create({ data: { userId: user.id, title, isActive: true, sortIndex }, select: { id: true, title: true } })
+  const habit = await prisma.habit.create({ data: { userId: user.id, title, isActive: true, sortIndex }, select: { id: true, title: true, userId: true } })
   return NextResponse.json({ ok: true, habit })
 }

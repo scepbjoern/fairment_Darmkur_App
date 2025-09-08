@@ -14,9 +14,10 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies()
   const userId = cookieStore.get('userId')?.value
-  const user = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, displayName: true } }) : null
+  const user = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, displayName: true, settings: { select: { theme: true } } } }) : null
+  const theme = user?.settings?.theme || 'dark'
   return (
-    <html lang="de" className="dark">
+    <html lang="de" className={theme === 'dark' ? 'dark' : 'bright'}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.webmanifest" />
@@ -29,6 +30,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <nav className="flex items-center gap-4">
               <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
               <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
+              <Link href="/settings" className="text-gray-300 hover:text-white">Einstellungen</Link>
               <AuthNav user={user} />
             </nav>
           </div>
@@ -50,3 +52,4 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     </html>
   )
 }
+
