@@ -85,7 +85,9 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ path: stri
     headers.set('ETag', etag)
 
     const data = await fs.readFile(effectivePath)
-    return new NextResponse(data, { status: 200, headers })
+    // Use Uint8Array for Response body to satisfy BodyInit and avoid SharedArrayBuffer typing issues
+    const u8 = new Uint8Array(data)
+    return new NextResponse(u8, { status: 200, headers })
   } catch (err) {
     console.error('uploads route error', err)
     return new NextResponse('Internal Server Error', { status: 500 })
