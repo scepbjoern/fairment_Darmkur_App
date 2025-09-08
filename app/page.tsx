@@ -52,8 +52,8 @@ function fmtHMLocal(iso?: string) {
 }
 
 // Simple calendar that shows current month and highlights days with data
-function Calendar(props: { date: string; daysWithData: Set<string>; onSelect: (d: string) => void }) {
-  const { date, daysWithData, onSelect } = props
+function Calendar(props: { date: string; daysWithData: Set<string>; reflectionDays: Set<string>; onSelect: (d: string) => void }) {
+  const { date, daysWithData, reflectionDays, onSelect } = props
   const [y, m, d] = date.split('-').map(n => parseInt(n, 10))
   const firstOfMonth = new Date(y, (m || 1) - 1, 1)
   const startWeekDay = (firstOfMonth.getDay() + 6) % 7 // 0=Mon
@@ -83,6 +83,7 @@ function Calendar(props: { date: string; daysWithData: Set<string>; onSelect: (d
           if (!c.ymd) return <div key={idx} className="h-8 rounded bg-transparent" />
           const isSelected = c.ymd === date
           const hasData = daysWithData.has(c.ymd)
+          const hasReflection = reflectionDays.has(c.ymd)
           return (
             <button
               key={c.ymd}
@@ -94,7 +95,12 @@ function Calendar(props: { date: string; daysWithData: Set<string>; onSelect: (d
             >
               <span className="relative">
                 {parseInt(c.ymd.split('-')[2], 10)}
-                {hasData && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-500 rounded-full" />}
+                {(hasData || hasReflection) && (
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5">
+                    {hasData && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />}
+                    {hasReflection && <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />}
+                  </span>
+                )}
               </span>
             </button>
           )
@@ -110,6 +116,7 @@ export default function HeutePage() {
   const [habits, setHabits] = useState<Habit[]>([])
   const [notes, setNotes] = useState<DayNote[]>([])
   const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set())
+  const [reflectionDays, setReflectionDays] = useState<Set<string>>(new Set())
   const [mealTime, setMealTime] = useState('')
   const [mealText, setMealText] = useState('')
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
@@ -160,7 +167,7 @@ export default function HeutePage() {
     return () => { aborted = true }
   }, [])
 
-  // Load calendar markers for the current month of the selected date
+  // Load calendar markers for the current month of the selected date (general data + reflections)
   useEffect(() => {
     const [y, m] = date.split('-')
     const ym = `${y}-${m}`
@@ -170,7 +177,10 @@ export default function HeutePage() {
         const res = await fetch(`/api/calendar?month=${ym}`, { credentials: 'same-origin' })
         if (!res.ok) return
         const data = await res.json()
-        if (!aborted) setDaysWithData(new Set<string>(data?.days ?? []))
+        if (!aborted) {
+          setDaysWithData(new Set<string>(data?.days ?? []))
+          setReflectionDays(new Set<string>(data?.reflectionDays ?? []))
+        }
       } catch {
         // ignore
       }
@@ -182,6 +192,17 @@ export default function HeutePage() {
     try {
       const formData = new FormData()
       Array.from(files).forEach(f => formData.append('files', f))
+      // Optional image settings from localStorage for server-side processing
+      try {
+        const raw = localStorage.getItem('imageSettings')
+        if (raw) {
+          const s = JSON.parse(raw)
+          if (s?.format) formData.append('imageFormat', String(s.format))
+          if (s?.quality) formData.append('imageQuality', String(s.quality))
+          if (s?.maxWidth) formData.append('imageMaxWidth', String(s.maxWidth))
+          if (s?.maxHeight) formData.append('imageMaxHeight', String(s.maxHeight))
+        }
+      } catch {}
       const res = await fetch(`/api/notes/${noteId}/photos`, { method: 'POST', body: formData, credentials: 'same-origin' })
       const data = await res.json()
       if (data?.notes) setNotes(data.notes)
@@ -305,7 +326,7 @@ export default function HeutePage() {
 
       <div className="card p-4 space-y-3">
         <h2 className="font-medium">Kalender</h2>
-        <Calendar date={date} daysWithData={daysWithData} onSelect={(d) => setDate(d)} />
+        <Calendar date={date} daysWithData={daysWithData} reflectionDays={reflectionDays} onSelect={(d) => setDate(d)} />
       </div>
 
       {reflectionDue?.due && (
@@ -399,7 +420,7 @@ export default function HeutePage() {
                           <div>
                             <label className="inline-flex items-center gap-2 text-xs text-gray-400">
                               <span>Fotos hinzufügen</span>
-                              <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
+                              <input type="file" accept="image/*" capture="environment" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
                             </label>
                           </div>
                         </div>

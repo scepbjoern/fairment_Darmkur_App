@@ -47,6 +47,17 @@ export default function ReflectionsPage() {
   async function uploadPhotos(reflectionId: string, files: FileList) {
     const fd = new FormData()
     Array.from(files).forEach(f => fd.append('files', f))
+    // Append optional client-side image settings from localStorage for server-side processing
+    try {
+      const raw = localStorage.getItem('imageSettings')
+      if (raw) {
+        const s = JSON.parse(raw)
+        if (s?.format) fd.append('imageFormat', String(s.format))
+        if (s?.quality) fd.append('imageQuality', String(s.quality))
+        if (s?.maxWidth) fd.append('imageMaxWidth', String(s.maxWidth))
+        if (s?.maxHeight) fd.append('imageMaxHeight', String(s.maxHeight))
+      }
+    } catch {}
     const res = await fetch(`/api/reflections/${reflectionId}/photos`, { method: 'POST', body: fd, credentials: 'same-origin' })
     if (!res.ok) return
     await load()
@@ -111,7 +122,7 @@ export default function ReflectionsPage() {
                   )}
                   <label className="inline-flex items-center gap-2 text-xs text-gray-400 mt-2">
                     <span>Fotos hinzufügen</span>
-                    <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files); e.currentTarget.value = '' }} />
+                    <input type="file" accept="image/*" capture="environment" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files); e.currentTarget.value = '' }} />
                   </label>
                 </div>
               </li>
