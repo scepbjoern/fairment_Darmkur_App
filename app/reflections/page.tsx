@@ -122,7 +122,7 @@ export default function ReflectionsPage() {
                   )}
                   <label className="inline-flex items-center gap-2 text-xs text-gray-400 mt-2">
                     <span>Fotos hinzufügen</span>
-                    <input type="file" accept="image/*" capture="environment" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files); e.currentTarget.value = '' }} />
+                    <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files); e.currentTarget.value = '' }} />
                   </label>
                 </div>
               </li>

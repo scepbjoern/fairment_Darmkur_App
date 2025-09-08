@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { AuthNav } from '@/components/AuthNav'
+import { SiteNav } from '@/components/SiteNav'
 
 export const metadata = {
   title: 'Fairment Darmkur Tagebuch',
@@ -27,12 +27,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur border-b border-slate-800">
           <div className="container h-14 flex items-center justify-between">
             <Link href="/" className="font-semibold">Darmkur-Tagebuch-App</Link>
-            <nav className="flex items-center gap-4">
-              <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
-              <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
-              <Link href="/settings" className="text-gray-300 hover:text-white">Einstellungen</Link>
-              <AuthNav user={user} />
-            </nav>
+            <SiteNav user={user ? { id: user.id, username: user.username, displayName: user.displayName } : null} />
           </div>
         </header>
         <main className="container py-4 flex-1">

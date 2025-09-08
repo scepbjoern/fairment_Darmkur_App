@@ -420,7 +420,7 @@ export default function HeutePage() {
                           <div>
                             <label className="inline-flex items-center gap-2 text-xs text-gray-400">
                               <span>Fotos hinzufügen</span>
-                              <input type="file" accept="image/*" capture="environment" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
+                              <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
                             </label>
                           </div>
                         </div>
@@ -429,10 +429,10 @@ export default function HeutePage() {
                 </ul>
               )}
             </div>
-            <div className="flex items-start gap-2">
-              <input type="time" value={mealTime} onChange={e => setMealTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-sm" />
-              <textarea value={mealText} onChange={e => setMealText(e.target.value)} placeholder="Beschreibung…" className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm" rows={3} />
-              <button className="pill" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
+              <input type="time" value={mealTime} onChange={e => setMealTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-sm w-full sm:w-auto" />
+              <textarea value={mealText} onChange={e => setMealText(e.target.value)} placeholder="Beschreibung…" className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm w-full" rows={3} />
+              <button className="pill w-full sm:w-auto" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
             </div>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
