@@ -15,14 +15,25 @@ body {
 }
 
 /* Light theme switch: when html has class `bright` */
-.bright { color-scheme: light; }
-.bright body { background-color: #f8fafc; color: #0f172a; }
+.bright { 
+  color-scheme: light; 
+}
+
+.bright body { 
+  background-color: #f8fafc; 
+  color: #0f172a; 
+}
 
 /* Override commonly used utility classes for bright theme */
 .bright .bg-background { background-color: #f8fafc; }
 .bright .bg-surface { background-color: #ffffff; }
 .bright .bg-surface\/80 { background-color: rgba(255,255,255,0.8); }
 .bright .bg-pill { background-color: #f1f5f9; color: #0f172a; }
+.bright .bg-primary { 
+  background-color: #0ea5e9;
+  color: #ffffff;
+}
+
 .bright .text-gray-100 { color: #0f172a; }
 .bright .text-gray-200 { color: #1f2937; }
 .bright .text-gray-300 { color: #334155; }
@@ -31,7 +42,10 @@ body {
 .bright .border-slate-800 { border-color: #e2e8f0; }
 .bright .border-slate-700 { border-color: #e2e8f0; }
 .bright .card { border-color: #e2e8f0; }
-.bright input, .bright textarea, .bright select {
+
+.bright input, 
+.bright textarea, 
+.bright select {
   background-color: #ffffff;
   color: #0f172a;
   border-color: #e2e8f0;
@@ -55,4 +69,8 @@ button.pill.active {
 
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
+}
+
+.bright input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
 }

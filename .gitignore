@@ -42,7 +42,6 @@ build/
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
 
 # Coverage/Tests

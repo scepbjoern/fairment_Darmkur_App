@@ -1,0 +1,25 @@
+{
+  "css.validate": false,
+  "json.schemas": [],
+  "json.schemaDownload.enable": false,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    "class:\\s*\"([^\"]*)\"",
+    "class:\\s*'([^']*)'",
+    "class:\\s*`([^`]*)`",
+    "class=\\s*([^\\s>]+)"
+  ]
+}

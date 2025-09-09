@@ -118,6 +118,8 @@ export default function SettingsPage() {
           root.classList.remove('dark')
           root.classList.add('bright')
         }
+        // Persist cookie so server-side rendering reads the same preference
+        try { document.cookie = `theme=${theme}; path=/; max-age=31536000`; } catch {}
         router.refresh()
       }
     } finally {
