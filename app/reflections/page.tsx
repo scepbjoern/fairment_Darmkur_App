@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import { CameraPicker } from '@/components/CameraPicker'
 
 type ReflectionKind = 'WEEK' | 'MONTH'
 
@@ -44,9 +45,13 @@ export default function ReflectionsPage() {
     }
   }
 
-  async function uploadPhotos(reflectionId: string, files: FileList) {
+  async function uploadPhotos(reflectionId: string, files: FileList | File[]) {
     const fd = new FormData()
-    Array.from(files).forEach(f => fd.append('files', f))
+    if ((files as FileList).length !== undefined && typeof (files as FileList).item === 'function') {
+      Array.from(files as FileList).forEach(f => fd.append('files', f))
+    } else {
+      (files as File[]).forEach(f => fd.append('files', f))
+    }
     // Append optional client-side image settings from localStorage for server-side processing
     try {
       const raw = localStorage.getItem('imageSettings')
@@ -120,10 +125,25 @@ export default function ReflectionsPage() {
                       ))}
                     </div>
                   )}
-                  <label className="inline-flex items-center gap-2 text-xs text-gray-400 mt-2">
-                    <span>Fotos hinzufügen</span>
-                    <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files); e.currentTarget.value = '' }} />
-                  </label>
+                  <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-400">
+                    <label className="inline-flex items-center gap-2">
+                      <span>Aus Galerie</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={e => {
+                          if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files)
+                          e.currentTarget.value = ''
+                        }}
+                      />
+                    </label>
+                    <CameraPicker
+                      label="Kamera"
+                      buttonClassName="pill"
+                      onCapture={(files) => uploadPhotos(r.id, files)}
+                    />
+                  </div>
                 </div>
               </li>
             ))}

@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { NumberPills } from '@/components/NumberPills'
 import { HabitChips } from '@/components/HabitChips'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
+import { CameraPicker } from '@/components/CameraPicker'
 
 const SYMPTOM_LABELS: Record<string, string> = {
   BESCHWERDEFREIHEIT: 'Beschwerdefreiheit',
@@ -188,10 +189,14 @@ export default function HeutePage() {
     return () => { aborted = true }
   }, [date])
 
-  async function uploadPhotos(noteId: string, files: FileList) {
+  async function uploadPhotos(noteId: string, files: FileList | File[]) {
     try {
       const formData = new FormData()
-      Array.from(files).forEach(f => formData.append('files', f))
+      if ((files as FileList).length !== undefined && typeof (files as FileList).item === 'function') {
+        Array.from(files as FileList).forEach(f => formData.append('files', f))
+      } else {
+        (files as File[]).forEach(f => formData.append('files', f))
+      }
       // Optional image settings from localStorage for server-side processing
       try {
         const raw = localStorage.getItem('imageSettings')
@@ -417,11 +422,24 @@ export default function HeutePage() {
                               ))}
                             </div>
                           )}
-                          <div>
+                          <div className="flex flex-wrap gap-2">
                             <label className="inline-flex items-center gap-2 text-xs text-gray-400">
-                              <span>Fotos hinzufügen</span>
-                              <input type="file" accept="image/*" multiple onChange={e => { if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files); e.currentTarget.value = '' }} />
+                              <span>Aus Galerie</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={e => {
+                                  if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files)
+                                  e.currentTarget.value = ''
+                                }}
+                              />
                             </label>
+                            <CameraPicker
+                              label="Kamera"
+                              buttonClassName="pill text-xs"
+                              onCapture={(files) => uploadPhotos(n.id, files)}
+                            />
                           </div>
                         </div>
                       </li>
