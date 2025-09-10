@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AuthNav } from '@/components/AuthNav'
 
@@ -7,6 +7,36 @@ type UserLite = { id: string; username: string; displayName: string | null } | n
 
 export function SiteNav({ user }: { user: UserLite }) {
   const [open, setOpen] = useState(false)
+  const [installEvt, setInstallEvt] = useState<any>(null)
+
+  // Listen for install prompt availability
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault()
+      setInstallEvt(e)
+    }
+    const onInstalled = () => setInstallEvt(null)
+    window.addEventListener('beforeinstallprompt', handler as any)
+    window.addEventListener('appinstalled', onInstalled)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler as any)
+      window.removeEventListener('appinstalled', onInstalled)
+    }
+  }, [])
+
+  const canInstall = Boolean(installEvt)
+  const doInstall = async () => {
+    try {
+      if (!installEvt) return
+      installEvt.prompt()
+      const { outcome } = await installEvt.userChoice
+      // After a choice, Chrome may not re-fire the event until next visit
+      setInstallEvt(null)
+      // Optionally: analytics based on outcome ('accepted' | 'dismissed')
+    } catch (_) {
+      // noop
+    }
+  }
 
   function close() { setOpen(false) }
 
@@ -17,6 +47,16 @@ export function SiteNav({ user }: { user: UserLite }) {
         <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
         <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
         <Link href="/settings" className="text-gray-300 hover:text-white">Einstellungen</Link>
+        {canInstall && (
+          <button
+            type="button"
+            onClick={doInstall}
+            className="pill"
+            title="App installieren"
+          >
+            Installieren
+          </button>
+        )}
         <AuthNav user={user} />
       </nav>
 
@@ -37,6 +77,15 @@ export function SiteNav({ user }: { user: UserLite }) {
             <Link href="/analytics" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Auswertungen</Link>
             <Link href="/reflections" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Reflexionen</Link>
             <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Einstellungen</Link>
+            {canInstall && (
+              <button
+                type="button"
+                className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 text-left"
+                onClick={() => { close(); doInstall() }}
+              >
+                App installieren
+              </button>
+            )}
             <div className="border-t border-slate-800 my-1" />
             <div className="px-3 py-2">
               <AuthNav user={user} />
