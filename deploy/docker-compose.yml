@@ -71,8 +71,9 @@ services:
 
       do_backup() {
         local ts outfile start end compress_opt
-        ts=$(date -u "+%Y-%m-%d_%H-%M-%S")
-        outfile="/dump/dump_${ts}.dump"
+        ts=$$(date -u "+%Y-%m-%d_%H-%M-%S")
+        log "Timestamp: $$ts"
+        outfile="/dump/dump_$${ts}.dump"
 
         # Kompressionsparameter (PG16+: Methode[:Level] moeglich)
         if [ -n "${BACKUP_COMPRESS:-}" ]; then
@@ -85,13 +86,13 @@ services:
         start=$$SECONDS
         if pg_dump -h "$$PGHOST" -U "$$PGUSER" -d "$$PGDATABASE" -Fc \
                   "$${compress_opt[@]}" -f "$$outfile" \
-                  2>"/dump/dump_${ts}.stderr.log"; then
+                  2>"/dump/dump_$${ts}.stderr.log"; then
           end=$$SECONDS
           log "Backup OK (Dauer: $$((end-start))s, Groesse: $$(du -h "$$outfile" | awk '"'"'{print $$1}'"'"'))"
-          [ -s "/dump/dump_${ts}.stderr.log" ] || rm -f "/dump/dump_${ts}.stderr.log"
+          [ -s "/dump/dump_$${ts}.stderr.log" ] || rm -f "/dump/dump_$${ts}.stderr.log"
         else
           end=$$SECONDS
-          log "Backup FEHLGESCHLAGEN (Dauer: $$((end-start))s). Details: dump_${ts}.stderr.log"
+          log "Backup FEHLGESCHLAGEN (Dauer: $$((end-start))s). Details: dump_$${ts}.stderr.log"
           return 1
         fi
 
