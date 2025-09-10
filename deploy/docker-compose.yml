@@ -50,7 +50,7 @@ services:
     environment:
       PGHOST: db
       PGUSER: ${POSTGRES_USER}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGPASSWORD: "${POSTGRES_PASSWORD}"
       PGDATABASE: ${POSTGRES_DB}
       BACKUP_NUM_KEEP: "3"
       BACKUP_FREQUENCY: "8h"
@@ -64,7 +64,7 @@ services:
       trap "exit 0" SIGHUP SIGINT SIGTERM
 
       # Warten bis die DB erreichbar ist
-      until pg_isready -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; do
+      until pg_isready -h "$$PGHOST" -U "$$PGUSER" -d "$$PGDATABASE" >/dev/null 2>&1; do
         sleep 2
       done
 
@@ -72,23 +72,23 @@ services:
       mkdir -p /dump
 
       while true; do
-        ts=\$(date -u "+%Y-%m-%d_%H-%M-%S")
+        ts=$$(date -u "+%Y-%m-%d_%H-%M-%S")
         # Dump im Custom-Format (-Fc)
-        pg_dump -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -Fc -f "/dump/dump_\${ts}.psql"
+        pg_dump -h "$$PGHOST" -U "$$PGUSER" -d "$$PGDATABASE" -Fc -f "/dump/dump_$${ts}.psql"
 
         # Aufraeumen: nur die juengsten BACKUP_NUM_KEEP behalten
-        KEEP=\${BACKUP_NUM_KEEP:-3}
+        KEEP=$${BACKUP_NUM_KEEP:-3}
         shopt -s nullglob
         files=(/dump/dump_*.psql)
-        if (("\${#files[@]}" > KEEP)); then
+        if (("$${#files[@]}" > KEEP)); then
           # sortiere nach Zeit absteigend (juengste zuerst)
           mapfile -t sorted < <(ls -1t /dump/dump_*.psql 2>/dev/null || true)
-          if (("\${#sorted[@]}" > KEEP)); then
-            printf "%s\0" "\${sorted[@]:KEEP}" | xargs -0 -r rm --
+          if (("$${#sorted[@]}" > KEEP)); then
+            printf "%s\0" "$${sorted[@]:KEEP}" | xargs -0 -r rm --
           fi
         fi
 
-        sleep \${BACKUP_FREQUENCY:-8h}
+        sleep $${BACKUP_FREQUENCY:-8h}
       done
       EOF'
     labels:
@@ -99,6 +99,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
 
 
 networks:
