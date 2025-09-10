@@ -48,6 +48,7 @@ model User {
   habits       Habit[]
   days         DayEntry[]
   reflections  Reflection[]
+  links        UserLink[]
 }
 
 model UserSettings {
@@ -164,4 +165,15 @@ model ReflectionPhoto {
   reflectionId String
   reflection   Reflection  @relation(fields: [reflectionId], references: [id])
   url          String
+}
+
+model UserLink {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

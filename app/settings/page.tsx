@@ -25,6 +25,8 @@ type ImageSettings = {
   maxHeight: number
 }
 
+type UserLink = { id: string; name: string; url: string }
+
 export default function SettingsPage() {
   const router = useRouter()
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
@@ -39,6 +41,9 @@ export default function SettingsPage() {
   const [newHabit, setNewHabit] = useState('')
   const [imageSettings, setImageSettings] = useState<ImageSettings>({ format: 'webp', quality: 80, maxWidth: 1600, maxHeight: 1600 })
   const [profileError, setProfileError] = useState<string | null>(null)
+  const [links, setLinks] = useState<UserLink[]>([])
+  const [newLinkName, setNewLinkName] = useState('')
+  const [newLinkUrl, setNewLinkUrl] = useState('')
 
   // Export state
   const [expFrom, setExpFrom] = useState<string>('')
@@ -47,9 +52,10 @@ export default function SettingsPage() {
 
   async function load() {
     try {
-      const [meRes, habitsRes] = await Promise.all([
+      const [meRes, habitsRes, linksRes] = await Promise.all([
         fetch('/api/me', { credentials: 'same-origin' }),
         fetch('/api/habits', { credentials: 'same-origin' }),
+        fetch('/api/links', { credentials: 'same-origin' }),
       ])
       if (meRes.ok) {
         const data = await meRes.json()
@@ -65,6 +71,10 @@ export default function SettingsPage() {
         const data = await habitsRes.json()
         setHabits(data.habits || [])
       }
+      if (linksRes.ok) {
+        const data = await linksRes.json()
+        setLinks(Array.isArray(data.links) ? data.links : [])
+      }
       // Load image settings from localStorage
       try {
         const raw = localStorage.getItem('imageSettings')
@@ -78,6 +88,43 @@ export default function SettingsPage() {
           })
         }
       } catch {}
+    } catch {}
+  }
+
+  async function addLink() {
+    const name = newLinkName.trim()
+    const url = newLinkUrl.trim()
+    if (!name || !url) return
+    try {
+      const res = await fetch('/api/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url }),
+        credentials: 'same-origin',
+      })
+      const data = await res.json()
+      if (res.ok && data?.ok) {
+        try {
+          const r = await fetch('/api/links', { credentials: 'same-origin' })
+          if (r.ok) {
+            const dd = await r.json()
+            setLinks(Array.isArray(dd.links) ? dd.links : [])
+          }
+        } catch {}
+        setNewLinkName('')
+        setNewLinkUrl('')
+      }
+    } catch {}
+  }
+
+  async function deleteLink(id: string) {
+    if (!id) return
+    try {
+      const res = await fetch(`/api/links/${id}`, { method: 'DELETE', credentials: 'same-origin' })
+      const data = await res.json()
+      if (res.ok && data?.ok) {
+        setLinks(ls => ls.filter(l => l.id !== id))
+      }
     } catch {}
   }
 
@@ -296,6 +343,38 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      <div className="card p-4 space-y-3 max-w-xl">
+        <h2 className="font-medium">Links</h2>
+        <div className="text-sm text-gray-400">Hier kannst du eigene Links anlegen, die im Menü unter „Links“ erscheinen.</div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+          <label className="md:col-span-2 text-sm">
+            <div className="text-gray-400">Name</div>
+            <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={newLinkName} onChange={e => setNewLinkName(e.target.value)} placeholder="z. B. Blog" />
+          </label>
+          <label className="md:col-span-3 text-sm">
+            <div className="text-gray-400">URL</div>
+            <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={newLinkUrl} onChange={e => setNewLinkUrl(e.target.value)} placeholder="https://… oder /docs/…" />
+          </label>
+          <div>
+            <button className="pill" onClick={addLink} disabled={!newLinkName.trim() || !newLinkUrl.trim()}>Hinzufügen</button>
+          </div>
+        </div>
+        <ul className="space-y-2">
+          {links.length === 0 ? (
+            <li className="text-sm text-gray-400">Noch keine eigenen Links.</li>
+          ) : (
+            links.map(l => (
+              <li key={l.id} className="flex items-center justify-between text-sm">
+                <div className="truncate">
+                  <span className="font-medium">{l.name}</span>
+                  <span className="ml-2 text-xs text-gray-400 truncate">{l.url}</span>
+                </div>
+                <button className="pill" onClick={() => deleteLink(l.id)}>Löschen</button>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
       
     </div>
   )
