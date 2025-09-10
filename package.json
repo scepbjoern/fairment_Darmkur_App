@@ -14,7 +14,9 @@
     "seed": "prisma db seed",
     "db:reset": "prisma db push --force-reset && npm run seed",
     "db:studio": "prisma studio",
-    "icons:convert": "tsx scripts/convert-icons.ts"
+    "icons:convert": "tsx scripts/convert-icons.ts",
+    "release": "commit-and-tag-version",
+    "postrelease": "git push --follow-tags origin HEAD && gh release create v%npm_package_version% -F CHANGELOG.md"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -42,6 +44,11 @@
     "@types/react": "^18.3.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.5.2",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "commit-and-tag-version": "^12.4.0"
+  },
+  "commit-and-tag-version": {
+    "preset": "conventionalcommits",
+    "releaseCommitMessageFormat": "chore(release): {{currentTag}}"
   }
 }
