@@ -22,12 +22,56 @@ export default function ReflectionsPage() {
   const [vows, setVows] = useState('')
   const [remarks, setRemarks] = useState('')
   const [list, setList] = useState<Reflection[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [eChanged, setEChanged] = useState('')
+  const [eGratitude, setEGratitude] = useState('')
+  const [eVows, setEVows] = useState('')
+  const [eRemarks, setERemarks] = useState('')
 
   async function load() {
     const res = await fetch('/api/reflections', { credentials: 'same-origin' })
     if (!res.ok) return
     const data = await res.json()
     setList(data.reflections || [])
+  }
+
+  function startEdit(r: Reflection) {
+    setEditingId(r.id)
+    setEChanged(r.changed || '')
+    setEGratitude(r.gratitude || '')
+    setEVows(r.vows || '')
+    setERemarks(r.remarks || '')
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEChanged('')
+    setEGratitude('')
+    setEVows('')
+    setERemarks('')
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    const res = await fetch(`/api/reflections/${editingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ changed: eChanged, gratitude: eGratitude, vows: eVows, remarks: eRemarks }),
+      credentials: 'same-origin',
+    })
+    if (res.ok) {
+      await load()
+      cancelEdit()
+    }
+  }
+
+  async function deleteReflection(id: string) {
+    if (!confirm('Reflexion wirklich löschen?')) return
+    const res = await fetch(`/api/reflections/${id}`, { method: 'DELETE', credentials: 'same-origin' })
+    if (res.ok) {
+      await load()
+      if (editingId === id) cancelEdit()
+    }
   }
 
   useEffect(() => { load() }, [])
@@ -109,14 +153,44 @@ export default function ReflectionsPage() {
               <li key={r.id} className={`p-3 rounded border ${r.kind === 'MONTH' ? 'border-blue-600/60 bg-blue-900/20' : 'border-emerald-600/60 bg-emerald-900/20'}`}>
                 <div className="flex items-center justify-between text-xs text-gray-300">
                   <div className="font-medium">{r.kind === 'MONTH' ? 'Monatsreflexion' : 'Wochenreflexion'}</div>
-                  <div>{new Date(r.createdAtIso).toLocaleString()}</div>
+                  <div className="flex items-center gap-2">
+                    <span>{new Date(r.createdAtIso).toLocaleString()}</span>
+                    {editingId === r.id ? (
+                      <>
+                        <button className="pill" onClick={saveEdit}>Speichern</button>
+                        <button className="pill" onClick={cancelEdit}>Abbrechen</button>
+                      </>
+                    ) : (
+                      <>
+                        <button title="Bearbeiten" onClick={() => startEdit(r)}>✏️</button>
+                        <button title="Löschen" onClick={() => deleteReflection(r.id)}>🗑️</button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-2 grid gap-2 text-sm">
-                  {r.changed && <div><div className="text-gray-400 text-xs">Was hat sich verändert?</div><div className="whitespace-pre-wrap">{r.changed}</div></div>}
-                  {r.gratitude && <div><div className="text-gray-400 text-xs">Wofür bin ich dankbar?</div><div className="whitespace-pre-wrap">{r.gratitude}</div></div>}
-                  {r.vows && <div><div className="text-gray-400 text-xs">Vorsätze</div><div className="whitespace-pre-wrap">{r.vows}</div></div>}
-                  {r.remarks && <div><div className="text-gray-400 text-xs">Sonstige Bemerkungen</div><div className="whitespace-pre-wrap">{r.remarks}</div></div>}
-                </div>
+                {editingId === r.id ? (
+                  <div className="mt-2 grid gap-2 text-sm">
+                    <label className="block text-xs text-gray-400">Was hat sich verändert?
+                      <textarea value={eChanged} onChange={e => setEChanged(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
+                    </label>
+                    <label className="block text-xs text-gray-400">Wofür bin ich dankbar?
+                      <textarea value={eGratitude} onChange={e => setEGratitude(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
+                    </label>
+                    <label className="block text-xs text-gray-400">Vorsätze
+                      <textarea value={eVows} onChange={e => setEVows(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
+                    </label>
+                    <label className="block text-xs text-gray-400">Sonstige Bemerkungen
+                      <textarea value={eRemarks} onChange={e => setERemarks(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="mt-2 grid gap-2 text-sm">
+                    {r.changed && <div><div className="text-gray-400 text-xs">Was hat sich verändert?</div><div className="whitespace-pre-wrap">{r.changed}</div></div>}
+                    {r.gratitude && <div><div className="text-gray-400 text-xs">Wofür bin ich dankbar?</div><div className="whitespace-pre-wrap">{r.gratitude}</div></div>}
+                    {r.vows && <div><div className="text-gray-400 text-xs">Vorsätze</div><div className="whitespace-pre-wrap">{r.vows}</div></div>}
+                    {r.remarks && <div><div className="text-gray-400 text-xs">Sonstige Bemerkungen</div><div className="whitespace-pre-wrap">{r.remarks}</div></div>}
+                  </div>
+                )}
                 <div className="mt-2">
                   {r.photos && r.photos.length > 0 && (
                     <div className="flex flex-wrap gap-2">
@@ -127,11 +201,12 @@ export default function ReflectionsPage() {
                   )}
                   <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-400">
                     <label className="inline-flex items-center gap-2">
-                      <span>Aus Galerie</span>
+                      <span className="pill">Foto hochladen</span>
                       <input
                         type="file"
                         accept="image/*"
                         multiple
+                        className="hidden"
                         onChange={e => {
                           if (e.target.files && e.target.files.length > 0) uploadPhotos(r.id, e.target.files)
                           e.currentTarget.value = ''

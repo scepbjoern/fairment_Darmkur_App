@@ -67,6 +67,7 @@ function Calendar(props: { date: string; daysWithData: Set<string>; reflectionDa
     const ymdStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     cells.push({ ymd: ymdStr, inMonth: true })
   }
+
   // pad to complete weeks
   while (cells.length % 7 !== 0) cells.push({ ymd: null, inMonth: false })
 
@@ -124,6 +125,49 @@ export default function HeutePage() {
   const [viewer, setViewer] = useState<{ noteId: string; index: number } | null>(null)
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null)
   const [reflectionDue, setReflectionDue] = useState<{ due: boolean; daysSince: number } | null>(null)
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [editingTime, setEditingTime] = useState<string>('')
+  const [editingText, setEditingText] = useState<string>('')
+
+  function startEditNote(n: DayNote) {
+    setEditingNoteId(n.id)
+    setEditingTime(fmtHMLocal(n.occurredAtIso))
+    setEditingText(n.text || '')
+  }
+
+  function cancelEditNote() {
+    setEditingNoteId(null)
+    setEditingTime('')
+    setEditingText('')
+  }
+
+  async function saveEditNote(noteId: string) {
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: editingText, time: editingTime }),
+        credentials: 'same-origin',
+      })
+      const data = await res.json()
+      if (data?.notes) setNotes(data.notes)
+      cancelEditNote()
+    } catch (e) {
+      console.error('Edit note failed', e)
+    }
+  }
+
+  async function deleteNote(noteId: string) {
+    if (!window.confirm('Eintrag wirklich löschen?')) return
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, { method: 'DELETE', credentials: 'same-origin' })
+      const data = await res.json()
+      if (data?.notes) setNotes(data.notes)
+      if (editingNoteId === noteId) cancelEditNote()
+    } catch (e) {
+      console.error('Delete note failed', e)
+    }
+  }
 
   const goViewer = (delta: number) => {
     setViewer(v => {
@@ -411,7 +455,33 @@ export default function HeutePage() {
                       <li key={n.id} className="flex items-start gap-2 text-sm">
                         <span className="text-gray-400 w-28">{fmtHMLocal(n.occurredAtIso) + (n.createdAtIso ? ` (${fmtHMLocal(n.createdAtIso)})` : '')}</span>
                         <div className="flex-1 space-y-2">
-                          <div className="whitespace-pre-wrap text-xs leading-5">{n.text}</div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs text-gray-400">&nbsp;</div>
+                            <div className="flex items-center gap-1">
+                              {editingNoteId === n.id ? (
+                                <>
+                                  <button className="pill text-xs" onClick={() => saveEditNote(n.id)}>Speichern</button>
+                                  <button className="pill text-xs" onClick={cancelEditNote}>Abbrechen</button>
+                                </>
+                              ) : (
+                                <>
+                                  <button className="text-xs" title="Bearbeiten" onClick={() => startEditNote(n)}>✏️</button>
+                                  <button className="text-xs" title="Löschen" onClick={() => deleteNote(n.id)}>🗑️</button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {editingNoteId === n.id ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">Zeit</span>
+                                <input type="time" value={editingTime} onChange={e => setEditingTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-xs" />
+                              </div>
+                              <textarea value={editingText} onChange={e => setEditingText(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2 text-xs leading-5" rows={3} />
+                            </div>
+                          ) : (
+                            <div className="whitespace-pre-wrap text-xs leading-5">{n.text}</div>
+                          )}
                           {n.photos && n.photos.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {n.photos.map((p, idx) => (
@@ -423,12 +493,13 @@ export default function HeutePage() {
                             </div>
                           )}
                           <div className="flex flex-wrap gap-2">
-                            <label className="inline-flex items-center gap-2 text-xs text-gray-400">
-                              <span>Aus Galerie</span>
+                            <label className="inline-flex items-center gap-2">
+                              <span className="pill text-xs">Foto hochladen</span>
                               <input
                                 type="file"
                                 accept="image/*"
                                 multiple
+                                className="hidden"
                                 onChange={e => {
                                   if (e.target.files && e.target.files.length > 0) uploadPhotos(n.id, e.target.files)
                                   e.currentTarget.value = ''
