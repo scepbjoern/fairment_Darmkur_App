@@ -2,6 +2,15 @@
 FROM node:22-bookworm AS build
 WORKDIR /app
 
+# System build deps for native modules (e.g. sharp)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
 # Optional Proxy (no effect if not provided)
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -29,8 +38,8 @@ RUN npm config set fetch-retries 5 \
 # Verify registry reachability during build
 RUN npm ping --registry=https://registry.npmjs.org || true
 
-# Install deps; avoid scripts (Prisma) during build; prefer npm install so package.json versions are honored
-RUN npm install --no-audit --no-fund --ignore-scripts --verbose \
+# Install deps deterministically; avoid scripts (Prisma) during build; allow legacy peer deps to prevent resolver failures in CI
+RUN npm ci --no-audit --no-fund --ignore-scripts --verbose --legacy-peer-deps \
  || (echo 'Dumping npm logs...' \
      && (test -d /root/.npm/_logs && find /root/.npm/_logs -type f -name '*.log' -print -exec cat {} \; || true) \
      && exit 1)

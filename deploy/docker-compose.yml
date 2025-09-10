@@ -23,6 +23,10 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY}
+        HTTPS_PROXY: ${HTTPS_PROXY}
+        NO_PROXY: ${NO_PROXY}
       network: host
     restart: unless-stopped
     environment:
