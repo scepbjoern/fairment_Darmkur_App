@@ -427,6 +427,19 @@ export default function HeutePage() {
 
           <div className="card p-4 space-y-3">
             <h2 className="font-medium">Stuhl (Bristol 1–7)</h2>
+            <div className="text-xs text-gray-400">
+              Die Bedeutung der Zahlen wird in diesem Ausschnitt aus dem Darmkur‑Guide erklärt:
+              {' '}
+              <a
+                href="/docs/Darmkur-Guide_Auszug.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-blue-400 hover:text-blue-300"
+              >
+                Darmkur‑Guide (Auszug)
+              </a>
+              .
+            </div>
             <NumberPills min={1} max={7} value={day.stool} onChange={updateStool} ariaLabel="Bristol" />
           </div>
 
