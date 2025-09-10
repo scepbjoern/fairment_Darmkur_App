@@ -40,6 +40,11 @@ export default function SettingsPage() {
   const [imageSettings, setImageSettings] = useState<ImageSettings>({ format: 'webp', quality: 80, maxWidth: 1600, maxHeight: 1600 })
   const [profileError, setProfileError] = useState<string | null>(null)
 
+  // Export state
+  const [expFrom, setExpFrom] = useState<string>('')
+  const [expTo, setExpTo] = useState<string>('')
+  const [expPhotos, setExpPhotos] = useState<boolean>(false)
+
   async function load() {
     try {
       const [meRes, habitsRes] = await Promise.all([
@@ -290,6 +295,8 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      
     </div>
   )
 }

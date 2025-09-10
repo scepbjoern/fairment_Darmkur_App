@@ -46,6 +46,7 @@ export function SiteNav({ user }: { user: UserLite }) {
       <nav className="hidden md:flex items-center gap-4">
         <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
         <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
+        <Link href="/export" className="text-gray-300 hover:text-white">Export</Link>
         <Link href="/settings" className="text-gray-300 hover:text-white">Einstellungen</Link>
         {canInstall && (
           <button
@@ -76,6 +77,7 @@ export function SiteNav({ user }: { user: UserLite }) {
             <Link href="/" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Start</Link>
             <Link href="/analytics" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Auswertungen</Link>
             <Link href="/reflections" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Reflexionen</Link>
+            <Link href="/export" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Export</Link>
             <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Einstellungen</Link>
             {canInstall && (
               <button
