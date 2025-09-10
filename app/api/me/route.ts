@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       id: user.id,
       username: user.username,
       displayName: user.displayName,
+      profileImageUrl: (user as any).profileImageUrl ?? null,
       settings: settings ? {
         theme: settings.theme,
         timeFormat24h: settings.timeFormat24h,
@@ -88,6 +89,7 @@ export async function PATCH(req: NextRequest) {
         id: updatedUser.id,
         username: updatedUser.username,
         displayName: updatedUser.displayName,
+        profileImageUrl: (updatedUser as any).profileImageUrl ?? null,
         settings: updatedSettings ? {
           theme: updatedSettings.theme,
           timeFormat24h: updatedSettings.timeFormat24h,

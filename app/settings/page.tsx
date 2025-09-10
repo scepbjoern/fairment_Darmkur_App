@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
 import { useRouter } from 'next/navigation'
 
@@ -7,6 +7,7 @@ type Me = {
   id: string
   username: string
   displayName: string | null
+  profileImageUrl?: string | null
   settings: {
     theme: 'dark' | 'bright'
     autosaveEnabled: boolean
@@ -47,6 +48,15 @@ export default function SettingsPage() {
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [userSymptoms, setUserSymptoms] = useState<UserSymptom[]>([])
   const [newUserSymptom, setNewUserSymptom] = useState('')
+
+  // Avatar cropper state
+  const [avatarOpen, setAvatarOpen] = useState(false)
+  const [avatarImg, setAvatarImg] = useState<HTMLImageElement | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarScale, setAvatarScale] = useState(1)
+  const [avatarOffset, setAvatarOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const [lastPt, setLastPt] = useState<{ x: number; y: number } | null>(null)
 
   // Export state
   const [expFrom, setExpFrom] = useState<string>('')
@@ -95,6 +105,118 @@ export default function SettingsPage() {
           })
         }
       } catch {}
+    } catch {}
+  }
+
+  function openAvatarDialog() {
+    setAvatarOpen(true)
+    setAvatarImg(null)
+    setAvatarUrl(null)
+    setAvatarScale(1)
+    setAvatarOffset({ x: 0, y: 0 })
+  }
+
+  function onAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    const url = URL.createObjectURL(f)
+    const img = new Image()
+    img.onload = () => { setAvatarImg(img) }
+    img.src = url
+    setAvatarUrl(url)
+  }
+
+  function onAvatarPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    setDragging(true)
+    setLastPt({ x: e.clientX, y: e.clientY })
+  }
+  function onAvatarPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragging || !lastPt) return
+    const dx = e.clientX - lastPt.x
+    const dy = e.clientY - lastPt.y
+    setAvatarOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }))
+    setLastPt({ x: e.clientX, y: e.clientY })
+  }
+  function onAvatarPointerUp() {
+    setDragging(false)
+    setLastPt(null)
+  }
+
+  // Preview size measured from DOM to guarantee 1:1 crop regardless of rem/zoom
+  const previewRef = useRef<HTMLDivElement | null>(null)
+  const [previewSize, setPreviewSize] = useState<number>(256)
+  useEffect(() => {
+    function update() {
+      const el = previewRef.current
+      if (el) setPreviewSize(Math.max(1, Math.round(el.clientWidth)))
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [avatarOpen])
+
+  // Compute preview transform to match saveAvatar()
+  const preview = useMemo(() => {
+    if (!avatarImg) return null
+    const ps = previewSize
+    const baseScale = Math.max(ps / avatarImg.naturalWidth, ps / avatarImg.naturalHeight)
+    const S = baseScale * avatarScale
+    const width = avatarImg.naturalWidth * S
+    const height = avatarImg.naturalHeight * S
+    const left = ps / 2 - width / 2 + avatarOffset.x
+    const top = ps / 2 - height / 2 + avatarOffset.y
+    return { width, height, left, top }
+  }, [avatarImg, avatarScale, avatarOffset, previewSize])
+
+  async function saveAvatar() {
+    if (!avatarImg) return
+    // Create 512x512 canvas crop using current scale/offset
+    const CANVAS_SIZE = 512
+    const ps = previewSize // must match preview container pixel size
+    const canvas = document.createElement('canvas')
+    canvas.width = CANVAS_SIZE
+    canvas.height = CANVAS_SIZE
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE)
+    // Compute effective scale to cover preview container at base scale 1
+    const baseScale = Math.max(ps / avatarImg.naturalWidth, ps / avatarImg.naturalHeight)
+    const S = baseScale * avatarScale
+    // Image top-left in preview coords
+    const left = ps / 2 - (avatarImg.naturalWidth * S) / 2 + avatarOffset.x
+    const top = ps / 2 - (avatarImg.naturalHeight * S) / 2 + avatarOffset.y
+    // Visible crop in source image
+    let sx = (-left) / S
+    let sy = (-top) / S
+    let sw = ps / S
+    let sh = ps / S
+    // Clamp to image bounds
+    if (sx < 0) { sw += sx; sx = 0 }
+    if (sy < 0) { sh += sy; sy = 0 }
+    if (sx + sw > avatarImg.naturalWidth) sw = avatarImg.naturalWidth - sx
+    if (sy + sh > avatarImg.naturalHeight) sh = avatarImg.naturalHeight - sy
+    if (sw <= 0 || sh <= 0) return
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(avatarImg, sx, sy, sw, sh, 0, 0, CANVAS_SIZE, CANVAS_SIZE)
+    const blob: Blob = await new Promise(res => canvas.toBlob(b => res(b as Blob), 'image/webp', 0.9)!)
+    const form = new FormData()
+    form.append('file', blob, 'avatar.webp')
+    try {
+      const r = await fetch('/api/me/avatar', { method: 'POST', body: form })
+      const j = await r.json()
+      if (r.ok && j?.ok) {
+        setMe(m => m ? { ...m, profileImageUrl: j.url } : m)
+        setAvatarOpen(false)
+        if (avatarUrl) { try { URL.revokeObjectURL(avatarUrl) } catch {} }
+      }
+    } catch {}
+  }
+
+  async function deleteAvatar() {
+    try {
+      const r = await fetch('/api/me/avatar', { method: 'DELETE' })
+      await r.json().catch(() => ({}))
+      if (r.ok) setMe(m => m ? { ...m, profileImageUrl: null } : m)
     } catch {}
   }
 
@@ -273,7 +395,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <h1 className="text-xl font-semibold">Einstellungen</h1>
 
       <div className="card p-4 space-y-3">
@@ -291,6 +414,21 @@ export default function SettingsPage() {
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
         </form>
+        {/* Avatar controls */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="h-12 w-12 rounded-full overflow-hidden border border-slate-700 bg-surface flex items-center justify-center">
+            {me?.profileImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={me.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm text-gray-300 font-semibold">{(displayName || username || '?').slice(0,1).toUpperCase()}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="pill" onClick={openAvatarDialog}>Profilbild ändern</button>
+            {me?.profileImageUrl && <button className="pill" onClick={deleteAvatar}>Entfernen</button>}
+          </div>
+        </div>
       </div>
 
       <div className="card p-4 space-y-3 max-w-md">
@@ -438,5 +576,49 @@ export default function SettingsPage() {
       </div>
       
     </div>
+    {avatarOpen && (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setAvatarOpen(false)}>
+        <div className="bg-surface border border-slate-800 rounded-xl p-4 w-[360px]" onClick={e => e.stopPropagation()}>
+          <div className="text-sm font-medium mb-2">Profilbild zuschneiden</div>
+          <div
+            className="relative mx-auto mb-3 h-64 w-64 rounded-lg overflow-hidden bg-slate-900 border border-slate-800 touch-none select-none"
+            ref={previewRef}
+            onPointerDown={onAvatarPointerDown}
+            onPointerMove={onAvatarPointerMove}
+            onPointerUp={onAvatarPointerUp}
+            onPointerCancel={onAvatarPointerUp}
+          >
+            {avatarUrl ? (
+              // Preview via background image
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url(${avatarUrl})`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: `${preview?.left ?? 0}px ${preview?.top ?? 0}px`,
+                  backgroundSize: preview ? `${preview.width}px ${preview.height}px` : undefined,
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">Bild wählen…</div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mb-3">
+            <input type="range" min={1} max={3} step={0.01} value={avatarScale} onChange={e => setAvatarScale(Number(e.target.value))} className="flex-1" />
+            <span className="text-xs text-gray-400 w-10 text-right">{avatarScale.toFixed(2)}×</span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <label className="pill cursor-pointer">
+              <input type="file" accept="image/*" className="hidden" onChange={onAvatarFileChange} />Bild wählen
+            </label>
+            <div className="flex items-center gap-2">
+              <button className="pill" onClick={() => setAvatarOpen(false)}>Abbrechen</button>
+              <button className="pill" onClick={saveAvatar} disabled={!avatarImg}>Zuschneiden & Speichern</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   )
 }

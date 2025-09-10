@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { SiteNav } from '@/components/SiteNav'
 
 export const metadata = {
-  title: 'Fairment Darmkur Tagebuch',
+  title: 'Darmkur App',
   description: 'Mobile-first PWA for daily Darmkur tracking',
   manifest: '/manifest.webmanifest',
   icons: {
@@ -29,7 +29,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     select: { 
       id: true, 
       username: true, 
-      displayName: true, 
+      displayName: true,
+      profileImageUrl: true,
       settings: { select: { theme: true } } 
     } 
   }) : null
@@ -40,6 +41,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         id: true,
         username: true,
         displayName: true,
+        profileImageUrl: true,
         settings: { select: { theme: true } },
       },
     })
@@ -92,16 +94,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 height={28}
                 className="h-7 w-7 rounded-full border border-slate-700 dark:border-slate-200 bg-surface object-cover"
               />
-              <span>Darmkur-Tagebuch-App</span>
+              <span>Darmkur App</span>
             </Link>
-            <SiteNav user={user ? { id: user.id, username: user.username, displayName: user.displayName } : null} />
+            <SiteNav user={user ? { id: user.id, username: user.username, displayName: user.displayName, profileImageUrl: user.profileImageUrl } : null} />
           </div>
         </header>
         <main className="container py-4 flex-1">
           {children}
         </main>
         <footer className="border-t border-slate-800 bg-surface/80">
-          <div className="container py-2 text-xs text-gray-400">Fairment Darmkur Tagebuch App</div>
+          <div className="container py-2 text-xs text-gray-400">Darmkur App</div>
         </footer>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
