@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    const dayIds = dayEntries.map(d => d.id)
+    const dayIds = dayEntries.map((d: { id: string }) => d.id)
     const [customDefs, customScores] = await Promise.all([
       (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
       dayIds.length

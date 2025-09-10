@@ -48,8 +48,8 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'asc' },
     })
 
-    const dayIds = dayEntries.map(d => d.id)
-    const dates = dayEntries.map(d => toYmd(d.date))
+    const dayIds = dayEntries.map((d: { id: string; date: Date }) => d.id)
+    const dates = dayEntries.map((d: { id: string; date: Date }) => toYmd(d.date))
 
     // Load related rows
     const [symptomRows, stoolRows, tickRows, activeHabitsCount, customDefs, customScores] = await Promise.all([
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest) {
     // Stool avg
     let stoolAvg: number | null = null
     if (stoolRows.length) {
-      const sum = stoolRows.reduce((a, b) => a + b.bristol, 0)
+      const sum = stoolRows.reduce((a: number, b: { bristol: number }) => a + b.bristol, 0)
       stoolAvg = Number((sum / stoolRows.length).toFixed(2))
     }
 
@@ -210,7 +210,7 @@ export async function GET(req: NextRequest) {
       },
       customSymptoms: {
         defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
-        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map(k => customById[d.id]?.get(k) ?? null)])),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map((k: string) => customById[d.id]?.get(k) ?? null)])),
       },
     }
 

@@ -1,4 +1,4 @@
-import { PrismaClient, CareCategory, Phase } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -64,8 +64,8 @@ async function main() {
       data: {
         userId: user.id,
         date: ymd,
-        phase: Phase.PHASE_1,
-        careCategory: CareCategory.SANFT,
+        phase: 'PHASE_1',
+        careCategory: 'SANFT',
       },
     })
   }

@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
       select: { id: true, date: true },
       orderBy: { date: 'asc' },
     })
-    const dayIds = dayEntries.map(d => d.id)
-    const dates = dayEntries.map(d => toYmd(d.date))
+    const dayIds = dayEntries.map((d: { id: string; date: Date }) => d.id)
+    const dates = dayEntries.map((d: { id: string; date: Date }) => toYmd(d.date))
 
     const [symptomRows, stoolRows, tickRows, activeHabitsCount, reflections, customDefs, customScores] = await Promise.all([
       dayIds.length
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const markers = reflections.map(r => ({ id: r.id, date: toYmd(r.createdAt), kind: r.kind }))
+    const markers = reflections.map((r: { id: string; createdAt: Date; kind: any }) => ({ id: r.id, date: toYmd(r.createdAt), kind: r.kind }))
 
     // Custom symptoms series keyed by custom symptom id
     const customById: Record<string, Map<string, number>> = {}
@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
       symptoms: symptomSeries,
       customSymptoms: {
         defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
-        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map(k => customById[d.id]?.get(k) ?? null)])),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map((k: string) => customById[d.id]?.get(k) ?? null)])),
       },
     }
     const res = NextResponse.json(payload)

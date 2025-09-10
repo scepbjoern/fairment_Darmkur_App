@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
       dayIdByKey.set(key, de.id)
       dayKeyById.set(de.id, key)
     }
-    const dayIds = dayEntries.map(d => d.id)
+    const dayIds = dayEntries.map((d: { id: string; date: Date }) => d.id)
 
     // Load symptoms, stool, ticks
     const [symptomRows, stoolRows, tickRows, activeHabitsCount, customDefs, customScores] = await Promise.all([
@@ -195,7 +195,7 @@ export async function GET(req: NextRequest) {
       habitFulfillment,
       customSymptoms: {
         defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
-        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, keys.map(k => customById[d.id]?.get(k) ?? null)])),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, keys.map((k: string) => customById[d.id]?.get(k) ?? null)])),
       },
     }
 

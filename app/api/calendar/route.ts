@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     orderBy: { date: 'asc' },
   })
 
-  const days = rows.map(r => toYmdLocal(r.date))
+  const days = rows.map((r: { date: Date }) => toYmdLocal(r.date))
 
   // Reflection entries within the same month window (based on creation date)
   const reflRows = await (prisma as any).reflection.findMany({
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     select: { createdAt: true },
     orderBy: { createdAt: 'asc' },
   })
-  const reflectionDays = Array.from(new Set((reflRows as any[]).map(r => toYmdLocal(r.createdAt))))
+  const reflectionDays = Array.from(new Set((reflRows as any[]).map((r: { createdAt: Date }) => toYmdLocal(r.createdAt))))
 
   return NextResponse.json({ days, reflectionDays })
 }

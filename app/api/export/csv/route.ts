@@ -60,8 +60,8 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'asc' },
     })
 
-    const dayIds = dayEntries.map(d => d.id)
-    const keys = dayEntries.map(d => toYmd(d.date))
+    const dayIds = dayEntries.map((d: { id: string; date: Date }) => d.id)
+    const keys = dayEntries.map((d: { id: string; date: Date }) => toYmd(d.date))
     const idByKey = new Map<string, string>()
     const keyById = new Map<string, string>()
     for (let i = 0; i < dayEntries.length; i++) {
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     for (const r of tickRowsAll) doneById.set(r.dayEntryId, (doneById.get(r.dayEntryId) || 0) + 1)
 
     // Build per-day own habit completion map
-    const ownHabitIds = ownHabits.map(h => h.id)
+    const ownHabitIds = ownHabits.map((h: { id: string; title: string }) => h.id)
     const ticksOwn = ownHabitIds.length && dayIds.length
       ? await prisma.habitTick.findMany({
           where: { dayEntryId: { in: dayIds }, habitId: { in: ownHabitIds }, checked: true },
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
       'stool_bristol', 'habit_done', 'habits_total', 'habit_ratio',
       ...SYMPTOMS.map(s => `symptom_${s}`),
       ...(customDefs as any[]).map((d: any) => `customSymptom_${d.title}`),
-      ...ownHabits.map(h => `habit_${h.title}`),
+      ...ownHabits.map((h: { id: string; title: string }) => `habit_${h.title}`),
     ]
 
     const rows: string[][] = [header]
@@ -173,7 +173,7 @@ export async function GET(req: NextRequest) {
         String(ratio),
         ...symptomsRow.map(v => String(v)),
         ...customRow.map(v => String(v)),
-        ...ownHabits.map(h => (ownTickByDay.get(dayId)?.has(h.id) ? '1' : '0')),
+        ...ownHabits.map((h: { id: string; title: string }) => (ownTickByDay.get(dayId)?.has(h.id) ? '1' : '0')),
       ])
     }
 
