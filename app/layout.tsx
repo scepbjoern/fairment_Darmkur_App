@@ -9,6 +9,16 @@ export const metadata = {
   title: 'Fairment Darmkur Tagebuch',
   description: 'Mobile-first PWA for daily Darmkur tracking',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/logo_32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/logo_16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/icons/logo_192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/logo_180.png', sizes: '180x180' },
+    ],
+  },
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -48,7 +58,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
         <meta name="theme-color" content="#0b0f14" />
         <script
           dangerouslySetInnerHTML={{
@@ -74,7 +84,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur border-b border-slate-800 dark:border-slate-200">
           <div className="container h-14 flex items-center justify-between">
-            <Link href="/" className="font-semibold">Darmkur-Tagebuch-App</Link>
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <img
+                src="/icons/logo_32.png"
+                alt="App Icon"
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full border border-slate-700 dark:border-slate-200 bg-surface object-cover"
+              />
+              <span>Darmkur-Tagebuch-App</span>
+            </Link>
             <SiteNav user={user ? { id: user.id, username: user.username, displayName: user.displayName } : null} />
           </div>
         </header>

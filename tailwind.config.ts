@@ -26,8 +26,8 @@ const config: Config = {
           DEFAULT: '#334155',
         },
         pill: {
-          light: '#f1f5f9',
-          DEFAULT: '#1f2937',
+          light: 'rgb(241 245 249)',
+          DEFAULT: 'rgb(241 245 249 / 0.2)',
         },
         border: {
           light: '#e2e8f0',

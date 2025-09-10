@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "seed": "prisma db seed",
     "db:reset": "prisma db push --force-reset && npm run seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "icons:convert": "tsx scripts/convert-icons.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

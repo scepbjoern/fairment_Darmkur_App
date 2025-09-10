@@ -201,7 +201,7 @@ function WeeklyView() {
         {SYMPTOMS.map((sym) => (
           <div key={sym}>
             <div className="text-xs text-gray-400 mb-1">{sym}</div>
-            <SparkArea data={toSeries(days, data.symptoms[sym])} color="#f59e0b" yDomain={[1, 10]} />
+            <SparkArea data={toSeries(days, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
           </div>
         ))}
       </div>
@@ -305,7 +305,7 @@ function PhaseView() {
               <div key={sym}>
                 <div className="text-xs text-gray-400 mb-1">{sym}</div>
                 <SparkArea
-                  data={toSeries(data.series.dates, data.series.symptoms[sym])}
+                  data={toSeries(data.series.dates, (data as any)?.series?.symptoms?.[sym] ?? [])}
                   color="#f59e0b"
                   yDomain={[1, 10]}
                 />
@@ -392,7 +392,7 @@ function OverallView() {
             {SYMPTOMS.map((sym) => (
               <div key={sym}>
                 <div className="text-xs text-gray-400 mb-1">{sym}</div>
-                <SparkArea data={toSeries(data.dates, data.symptoms[sym])} color="#f59e0b" yDomain={[1, 10]} />
+                <SparkArea data={toSeries(data.dates, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
               </div>
             ))}
           </div>

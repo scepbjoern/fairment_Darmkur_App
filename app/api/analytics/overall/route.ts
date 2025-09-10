@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -23,15 +23,26 @@ function toYmd(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    // Resolve user (cookie-less context not available here; use demo fallback if needed)
-    // In app router, cookies are available via headers in Request in other signatures,
-    // but for simplicity we align with demo fallback if no cookie is bound.
-    // Use a small trick: fetch user by demo if multiple deployments rely on it.
-    // If you need strict cookie reading, switch signature to (req: NextRequest).
-    let user = await prisma.user.findUnique({ where: { username: 'demo' } })
-    if (!user) return NextResponse.json({ dates: [], wellBeingIndex: [], stool: [], habitFulfillment: [], markers: [] })
+    // Resolve user from cookie; fallback to demo; if still missing, return consistent empty shapes
+    const cookieUserId = req.cookies.get('userId')?.value
+    let user = cookieUserId
+      ? await prisma.user.findUnique({ where: { id: cookieUserId } })
+      : null
+    if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })
+    if (!user) {
+      const emptySymptoms = {
+        BESCHWERDEFREIHEIT: [],
+        ENERGIE: [],
+        STIMMUNG: [],
+        SCHLAF: [],
+        ENTSPANNUNG: [],
+        HEISSHUNGERFREIHEIT: [],
+        BEWEGUNG: [],
+      }
+      return NextResponse.json({ dates: [], wellBeingIndex: [], stool: [], habitFulfillment: [], markers: [], symptoms: emptySymptoms })
+    }
 
     // All day entries sorted
     const dayEntries = await prisma.dayEntry.findMany({
