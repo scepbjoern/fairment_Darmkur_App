@@ -81,6 +81,12 @@ export async function GET(req: NextRequest) {
     text: n.text ?? '',
     photos: (n.photos || []).map((p: any) => ({ id: p.id, url: p.url })),
   }))
+  // Load user-defined symptoms and their scores for this day
+  const userSyms = await (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' } })
+  const userScores = await (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: day.id } })
+  const scoreById = new Map<string, number>()
+  for (const r of userScores) scoreById.set(r.userSymptomId, r.score)
+  const userSymptoms = (userSyms as any[]).map((u: any) => ({ id: u.id, title: u.title, score: scoreById.get(u.id) }))
 
   const payload = {
     day: {
@@ -92,6 +98,7 @@ export async function GET(req: NextRequest) {
       symptoms,
       stool: stoolRow?.bristol ?? undefined,
       habitTicks: ticks,
+      userSymptoms,
     },
     habits,
     notes,

@@ -81,6 +81,22 @@ export async function GET(req: NextRequest) {
       },
     })
 
+    const dayIds = dayEntries.map(d => d.id)
+    const [customDefs, customScores] = await Promise.all([
+      (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
+      dayIds.length
+        ? (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, userSymptomId: true, score: true } })
+        : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
+    ])
+
+    // Build day -> (customSymptomId -> score) map
+    const customByDay = new Map<string, Map<string, number>>()
+    for (const r of customScores as any[]) {
+      const m = customByDay.get(r.dayEntryId) || new Map<string, number>()
+      m.set(r.userSymptomId, r.score)
+      customByDay.set(r.dayEntryId, m)
+    }
+
     // Prepare PDF
     const pdf = await PDFDocument.create()
     const font = await pdf.embedFont(StandardFonts.Helvetica)
@@ -205,6 +221,13 @@ export async function GET(req: NextRequest) {
 
       const symps = SYMPTOMS.map(k => `${k}: ${symptomsMap.get(k) ?? '—'}`).join(', ')
       drawParagraph('Symptome', symps)
+
+      // Custom user-defined symptoms paragraph
+      if ((customDefs as any[]).length > 0) {
+        const m = customByDay.get(de.id)
+        const customLine = (customDefs as any[]).map((d: any) => `${d.title}: ${m?.get(d.id) ?? '—'}`).join(', ')
+        drawParagraph('Eigene Symptome', customLine)
+      }
 
       // notes
       if (de.notesList.length) {

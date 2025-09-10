@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
     const dayIds = dayEntries.map(d => d.id)
 
     // Load symptoms, stool, ticks
-    const [symptomRows, stoolRows, tickRows, activeHabitsCount] = await Promise.all([
+    const [symptomRows, stoolRows, tickRows, activeHabitsCount, customDefs, customScores] = await Promise.all([
       dayIds.length
         ? prisma.symptomScore.findMany({
             where: { dayEntryId: { in: dayIds } },
@@ -111,6 +111,10 @@ export async function GET(req: NextRequest) {
         ? prisma.habitTick.findMany({ where: { dayEntryId: { in: dayIds }, checked: true }, select: { dayEntryId: true } })
         : Promise.resolve([] as { dayEntryId: string }[]),
       prisma.habit.count({ where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] } }),
+      (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
+      dayIds.length
+        ? (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, userSymptomId: true, score: true } })
+        : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
     ])
 
     // Map stool per day
@@ -144,6 +148,15 @@ export async function GET(req: NextRequest) {
 
     const stool: (number | null)[] = []
     const habitFulfillment: (number | null)[] = []
+    // Custom symptoms series: id -> (dayKey -> score)
+    const customById: Record<string, Map<string, number>> = {}
+    for (const def of customDefs as any[]) customById[def.id] = new Map<string, number>()
+    for (const r of customScores as any[]) {
+      const key = dayKeyById.get(r.dayEntryId)
+      if (!key) continue
+      const m = customById[r.userSymptomId]
+      if (m) m.set(key, r.score)
+    }
     const wellBeingIndex: (number | null)[] = []
 
     for (const key of keys) {
@@ -180,6 +193,10 @@ export async function GET(req: NextRequest) {
       wellBeingIndex,
       stool,
       habitFulfillment,
+      customSymptoms: {
+        defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, keys.map(k => customById[d.id]?.get(k) ?? null)])),
+      },
     }
 
     const res = NextResponse.json(payload)

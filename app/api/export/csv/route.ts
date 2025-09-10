@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       keyById.set(dayEntries[i].id, keys[i])
     }
 
-    const [symptomRows, stoolRows, tickRowsAll, activeHabitsCount, ownHabits] = await Promise.all([
+    const [symptomRows, stoolRows, tickRowsAll, activeHabitsCount, ownHabits, customDefs, customScores] = await Promise.all([
       dayIds.length
         ? prisma.symptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, type: true, score: true } })
         : Promise.resolve([] as { dayEntryId: string; type: SymptomKey; score: number }[]),
@@ -80,7 +80,11 @@ export async function GET(req: NextRequest) {
         ? prisma.habitTick.findMany({ where: { dayEntryId: { in: dayIds }, checked: true }, select: { dayEntryId: true } })
         : Promise.resolve([] as { dayEntryId: string }[]),
       prisma.habit.count({ where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] } }),
-      prisma.habit.findMany({ where: { userId: user.id, isActive: true }, select: { id: true, title: true }, orderBy: { sortIndex: 'asc' } })
+      prisma.habit.findMany({ where: { userId: user.id, isActive: true }, select: { id: true, title: true }, orderBy: { sortIndex: 'asc' } }),
+      (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
+      dayIds.length
+        ? (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, userSymptomId: true, score: true } })
+        : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
     ])
 
     const stoolById = new Map<string, number>()
@@ -116,6 +120,7 @@ export async function GET(req: NextRequest) {
       'date', 'phase', 'careCategory', 'wbi',
       'stool_bristol', 'habit_done', 'habits_total', 'habit_ratio',
       ...SYMPTOMS.map(s => `symptom_${s}`),
+      ...(customDefs as any[]).map((d: any) => `customSymptom_${d.title}`),
       ...ownHabits.map(h => `habit_${h.title}`),
     ]
 
@@ -133,6 +138,24 @@ export async function GET(req: NextRequest) {
         symptomsRow.push(typeof v === 'number' ? v : '')
         if (typeof v === 'number') values.push(v)
       }
+      // Custom symptoms per day in the order of customDefs
+      const customRow: (number | '')[] = []
+      if ((customDefs as any[]).length) {
+        // Build a map of custom scores by day for quick lookup
+        // Map dayId -> Map(customId -> score)
+        // Build once outside loop (opt), but small cost here is fine too
+      }
+      const customByDay = new Map<string, Map<string, number>>()
+      for (const r of customScores as any[]) {
+        const m = customByDay.get(r.dayEntryId) || new Map<string, number>()
+        m.set(r.userSymptomId, r.score)
+        customByDay.set(r.dayEntryId, m)
+      }
+      const mCustom = customByDay.get(dayId)
+      for (const d of customDefs as any[]) {
+        const cv = mCustom?.get(d.id)
+        customRow.push(typeof cv === 'number' ? cv : '')
+      }
       const wbi = values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)) : ''
       const stool = stoolById.get(dayId)
       const done = doneById.get(dayId) || 0
@@ -149,6 +172,7 @@ export async function GET(req: NextRequest) {
         String(total),
         String(ratio),
         ...symptomsRow.map(v => String(v)),
+        ...customRow.map(v => String(v)),
         ...ownHabits.map(h => (ownTickByDay.get(dayId)?.has(h.id) ? '1' : '0')),
       ])
     }

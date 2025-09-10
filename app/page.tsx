@@ -24,6 +24,7 @@ type Day = {
   symptoms: Record<string, number | undefined>
   stool?: number
   habitTicks: { habitId: string; checked: boolean }[]
+  userSymptoms?: { id: string; title: string; score?: number }[]
 }
 
 type Habit = { id: string; title: string }
@@ -286,6 +287,20 @@ export default function HeutePage() {
     doneSaving()
   }
 
+  async function updateUserSymptom(userSymptomId: string, score: number) {
+    if (!day) return
+    startSaving()
+    const res = await fetch(`/api/day/${day.id}/user-symptoms`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userSymptomId, score }),
+      credentials: 'same-origin',
+    })
+    const data = await res.json()
+    if (res.ok && data?.day) setDay(data.day)
+    doneSaving()
+  }
+
   async function updateSymptom(type: string, score: number) {
     if (!day) return
     startSaving()
@@ -422,6 +437,19 @@ export default function HeutePage() {
                   <NumberPills min={1} max={10} value={day.symptoms[type]} onChange={n => updateSymptom(type, n)} ariaLabel={SYMPTOM_LABELS[type]} />
                 </div>
               ))}
+            </div>
+            {/* Custom user-defined symptoms */}
+            <div className="space-y-3">
+              {(day.userSymptoms && day.userSymptoms.length > 0) ? (
+                day.userSymptoms.map(us => (
+                  <div key={us.id} className="space-y-1">
+                    <div className="text-sm text-gray-400">{us.title}</div>
+                    <NumberPills min={1} max={10} value={us.score} onChange={n => updateUserSymptom(us.id, n)} ariaLabel={us.title} />
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-gray-500">Noch keine eigenen Symptome. Lege welche in den Einstellungen an.</div>
+              )}
             </div>
           </div>
 

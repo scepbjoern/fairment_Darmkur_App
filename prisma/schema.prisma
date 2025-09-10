@@ -49,6 +49,7 @@ model User {
   days         DayEntry[]
   reflections  Reflection[]
   links        UserLink[]
+  userSymptoms UserSymptom[]
 }
 
 model UserSettings {
@@ -85,6 +86,7 @@ model DayEntry {
   stool        StoolScore?
   habitTicks   HabitTick[]
   notesList    DayNote[]
+  userSymptomScores UserSymptomScore[]
 
   @@unique([userId, date])
 }
@@ -176,4 +178,27 @@ model UserLink {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model UserSymptom {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  title      String
+  sortIndex  Int      @default(0)
+  isActive   Boolean  @default(true)
+  scores     UserSymptomScore[]
+
+  @@index([userId, sortIndex])
+}
+
+model UserSymptomScore {
+  id             String       @id @default(uuid())
+  dayEntryId     String
+  day            DayEntry     @relation(fields: [dayEntryId], references: [id])
+  userSymptomId  String
+  userSymptom    UserSymptom  @relation(fields: [userSymptomId], references: [id])
+  score          Int
+
+  @@unique([dayEntryId, userSymptomId])
 }

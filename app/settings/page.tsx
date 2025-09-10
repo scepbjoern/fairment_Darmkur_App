@@ -26,6 +26,7 @@ type ImageSettings = {
 }
 
 type UserLink = { id: string; name: string; url: string }
+type UserSymptom = { id: string; title: string }
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -44,6 +45,8 @@ export default function SettingsPage() {
   const [links, setLinks] = useState<UserLink[]>([])
   const [newLinkName, setNewLinkName] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
+  const [userSymptoms, setUserSymptoms] = useState<UserSymptom[]>([])
+  const [newUserSymptom, setNewUserSymptom] = useState('')
 
   // Export state
   const [expFrom, setExpFrom] = useState<string>('')
@@ -52,10 +55,11 @@ export default function SettingsPage() {
 
   async function load() {
     try {
-      const [meRes, habitsRes, linksRes] = await Promise.all([
+      const [meRes, habitsRes, linksRes, userSymptomsRes] = await Promise.all([
         fetch('/api/me', { credentials: 'same-origin' }),
         fetch('/api/habits', { credentials: 'same-origin' }),
         fetch('/api/links', { credentials: 'same-origin' }),
+        fetch('/api/user-symptoms', { credentials: 'same-origin' }),
       ])
       if (meRes.ok) {
         const data = await meRes.json()
@@ -75,7 +79,10 @@ export default function SettingsPage() {
         const data = await linksRes.json()
         setLinks(Array.isArray(data.links) ? data.links : [])
       }
-      // Load image settings from localStorage
+      if (userSymptomsRes.ok) {
+        const data = await userSymptomsRes.json()
+        setUserSymptoms(Array.isArray(data.symptoms) ? data.symptoms : [])
+      }
       try {
         const raw = localStorage.getItem('imageSettings')
         if (raw) {
@@ -90,6 +97,34 @@ export default function SettingsPage() {
       } catch {}
     } catch {}
   }
+
+  async function addUserSymptom() {
+    const title = newUserSymptom.trim()
+    if (!title) return
+    try {
+      const res = await fetch('/api/user-symptoms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }), credentials: 'same-origin' })
+      const data = await res.json()
+      if (res.ok && data?.ok) {
+        const r = await fetch('/api/user-symptoms', { credentials: 'same-origin' })
+        const dd = await r.json()
+        setUserSymptoms(Array.isArray(dd.symptoms) ? dd.symptoms : [])
+        setNewUserSymptom('')
+      }
+    } catch {}
+  }
+
+  async function deleteUserSymptom(id: string) {
+    if (!id) return
+    try {
+      const res = await fetch(`/api/user-symptoms/${id}`, { method: 'DELETE', credentials: 'same-origin' })
+      const data = await res.json()
+      if (res.ok && data?.ok) {
+        setUserSymptoms(list => list.filter(s => s.id !== id))
+      }
+    } catch {}
+  }
+
+  useEffect(() => { load() }, [])
 
   async function addLink() {
     const name = newLinkName.trim()
@@ -128,7 +163,6 @@ export default function SettingsPage() {
     } catch {}
   }
 
-  useEffect(() => { load() }, [])
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -341,6 +375,33 @@ export default function SettingsPage() {
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
         </div>
+      </div>
+
+      <div className="card p-4 space-y-3 max-w-xl">
+        <h2 className="font-medium">Eigene Symptome</h2>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+          <label className="md:col-span-4 text-sm">
+            <div className="text-gray-400">Name</div>
+            <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={newUserSymptom} onChange={e => setNewUserSymptom(e.target.value)} placeholder="z. B. Kopfschmerzen" />
+          </label>
+          <div>
+            <button className="pill" onClick={addUserSymptom} disabled={!newUserSymptom.trim()}>Hinzufügen</button>
+          </div>
+        </div>
+        <ul className="space-y-2">
+          {userSymptoms.length === 0 ? (
+            <li className="text-sm text-gray-400">Noch keine eigenen Symptome.</li>
+          ) : (
+            userSymptoms.map(s => (
+              <li key={s.id} className="flex items-center justify-between text-sm">
+                <div className="truncate">
+                  <span className="font-medium">{s.title}</span>
+                </div>
+                <button className="pill" onClick={() => deleteUserSymptom(s.id)}>Löschen</button>
+              </li>
+            ))
+          )}
+        </ul>
       </div>
 
       <div className="card p-4 space-y-3 max-w-xl">

@@ -41,6 +41,10 @@ type WeeklyData = {
   wellBeingIndex: (number | null)[]
   stool: (number | null)[]
   habitFulfillment: (number | null)[]
+  customSymptoms?: {
+    defs: { id: string; title: string }[]
+    series: Record<string, (number | null)[]>
+  }
 }
 
 type PhaseKey = 'PHASE_1' | 'PHASE_2' | 'PHASE_3'
@@ -59,6 +63,10 @@ type PhaseData = {
     habitFulfillment: (number | null)[]
     symptoms: Record<SymptomKey, (number | null)[]>
   }
+  customSymptoms?: {
+    defs: { id: string; title: string }[]
+    series: Record<string, (number | null)[]>
+  }
 }
 
 type OverallData = {
@@ -68,6 +76,10 @@ type OverallData = {
   habitFulfillment: (number | null)[]
   markers: { id: string; date: string; kind: 'WEEK' | 'MONTH' }[]
   symptoms: Record<SymptomKey, (number | null)[]>
+  customSymptoms?: {
+    defs: { id: string; title: string }[]
+    series: Record<string, (number | null)[]>
+  }
 }
 
 // ------- Utilities -------
@@ -204,6 +216,23 @@ function WeeklyView() {
             <SparkArea data={toSeries(days, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
           </div>
         ))}
+        {data.customSymptoms && data.customSymptoms.defs.length > 0 && (
+          <div className="col-span-full">
+            <div className="text-xs text-gray-400 mb-1">Eigene Symptome</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.customSymptoms.defs.map(def => (
+                <div key={def.id}>
+                  <div className="text-xs text-gray-400 mb-1">{def.title}</div>
+                  <SparkArea
+                    data={toSeries(days, data.customSymptoms!.series[def.id] || [])}
+                    color="#fb7185"
+                    yDomain={[1, 10]}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -311,6 +340,23 @@ function PhaseView() {
                 />
               </div>
             ))}
+            {data.customSymptoms && data.customSymptoms.defs.length > 0 && (
+              <div className="col-span-full">
+                <div className="text-xs text-gray-400 mb-1">Eigene Symptome</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.customSymptoms.defs.map(def => (
+                    <div key={def.id}>
+                      <div className="text-xs text-gray-400 mb-1">{def.title}</div>
+                      <SparkArea
+                        data={toSeries(data.series.dates, data.customSymptoms!.series[def.id] || [])}
+                        color="#fb7185"
+                        yDomain={[1, 10]}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -395,6 +441,23 @@ function OverallView() {
                 <SparkArea data={toSeries(data.dates, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
               </div>
             ))}
+            {data.customSymptoms && data.customSymptoms.defs.length > 0 && (
+              <div className="col-span-full">
+                <div className="text-xs text-gray-400 mb-1">Eigene Symptome</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {data.customSymptoms.defs.map(def => (
+                    <div key={def.id}>
+                      <div className="text-xs text-gray-400 mb-1">{def.title}</div>
+                      <SparkArea
+                        data={toSeries(data.dates, data.customSymptoms!.series[def.id] || [])}
+                        color="#fb7185"
+                        yDomain={[1, 10]}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

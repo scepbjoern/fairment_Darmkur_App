@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     const dayIds = dayEntries.map(d => d.id)
     const dates = dayEntries.map(d => toYmd(d.date))
 
-    const [symptomRows, stoolRows, tickRows, activeHabitsCount, reflections] = await Promise.all([
+    const [symptomRows, stoolRows, tickRows, activeHabitsCount, reflections, customDefs, customScores] = await Promise.all([
       dayIds.length
         ? prisma.symptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, type: true, score: true } })
         : Promise.resolve([] as { dayEntryId: string; type: SymptomKey; score: number }[]),
@@ -65,6 +65,10 @@ export async function GET(req: NextRequest) {
         : Promise.resolve([] as { dayEntryId: string }[]),
       prisma.habit.count({ where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] } }),
       prisma.reflection.findMany({ where: { userId: user.id }, select: { id: true, createdAt: true, kind: true }, orderBy: { createdAt: 'asc' } }),
+      (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
+      dayIds.length
+        ? (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, userSymptomId: true, score: true } })
+        : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
     ])
 
     const dayKeyById = new Map<string, string>()
@@ -129,7 +133,28 @@ export async function GET(req: NextRequest) {
 
     const markers = reflections.map(r => ({ id: r.id, date: toYmd(r.createdAt), kind: r.kind }))
 
-    const payload = { dates, wellBeingIndex, stool, habitFulfillment, markers, symptoms: symptomSeries }
+    // Custom symptoms series keyed by custom symptom id
+    const customById: Record<string, Map<string, number>> = {}
+    for (const def of customDefs as any[]) customById[def.id] = new Map<string, number>()
+    for (const r of customScores as any[]) {
+      const key = dayKeyById.get(r.dayEntryId)
+      if (!key) continue
+      const m = customById[r.userSymptomId]
+      if (m) m.set(key, r.score)
+    }
+
+    const payload = {
+      dates,
+      wellBeingIndex,
+      stool,
+      habitFulfillment,
+      markers,
+      symptoms: symptomSeries,
+      customSymptoms: {
+        defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map(k => customById[d.id]?.get(k) ?? null)])),
+      },
+    }
     const res = NextResponse.json(payload)
     res.headers.set('Cache-Control', 'no-store')
     return res

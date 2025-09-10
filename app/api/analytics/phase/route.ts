@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const dates = dayEntries.map(d => toYmd(d.date))
 
     // Load related rows
-    const [symptomRows, stoolRows, tickRows, activeHabitsCount] = await Promise.all([
+    const [symptomRows, stoolRows, tickRows, activeHabitsCount, customDefs, customScores] = await Promise.all([
       dayIds.length
         ? prisma.symptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, type: true, score: true } })
         : Promise.resolve([] as { dayEntryId: string; type: SymptomKey; score: number }[]),
@@ -63,6 +63,10 @@ export async function GET(req: NextRequest) {
         ? prisma.habitTick.findMany({ where: { dayEntryId: { in: dayIds }, checked: true }, select: { dayEntryId: true } })
         : Promise.resolve([] as { dayEntryId: string }[]),
       prisma.habit.count({ where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] } }),
+      (prisma as any).userSymptom.findMany({ where: { userId: user.id, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } }),
+      dayIds.length
+        ? (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: { in: dayIds } }, select: { dayEntryId: true, userSymptomId: true, score: true } })
+        : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
     ])
 
     // Indexing helpers
@@ -180,6 +184,16 @@ export async function GET(req: NextRequest) {
     const hfVals = habitFulfillment.filter((v): v is number => typeof v === 'number')
     if (hfVals.length) habitAvg = Number((hfVals.reduce((a, b) => a + b, 0) / hfVals.length).toFixed(3))
 
+    // Build custom symptom per-day series
+    const customById: Record<string, Map<string, number>> = {}
+    for (const def of customDefs as any[]) customById[def.id] = new Map<string, number>()
+    for (const r of customScores as any[]) {
+      const key = dayKeyById.get(r.dayEntryId)
+      if (!key) continue
+      const m = customById[r.userSymptomId]
+      if (m) m.set(key, r.score)
+    }
+
     const payload = {
       phase,
       metrics: {
@@ -193,6 +207,10 @@ export async function GET(req: NextRequest) {
         stool: stoolSeries,
         habitFulfillment,
         symptoms: symptomSeries,
+      },
+      customSymptoms: {
+        defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
+        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map(k => customById[d.id]?.get(k) ?? null)])),
       },
     }
 
