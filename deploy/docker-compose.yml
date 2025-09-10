@@ -54,6 +54,11 @@ services:
       PGDATABASE: ${POSTGRES_DB}
       BACKUP_NUM_KEEP: "3"
       BACKUP_FREQUENCY: "8h"
+      # Kompression steuerbar: Beispiele
+      #   gzip:9   (starke Kompression, langsamer)
+      #   lz4      (sehr schnell, etwas groesser)
+      #   zstd:15  (sehr gute Ratio, schnell – wenn im Image verlinkt)
+      BACKUP_COMPRESS: "gzip:6"
     depends_on:
       db:
         condition: service_healthy
@@ -61,21 +66,28 @@ services:
     entrypoint: |
       bash -c 'bash -s << "EOF"
       set -Eeuo pipefail
-
       log() { printf "[%s] %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*"; }
-
       trap "log \"Stop-Signal empfangen, beende Container\"; exit 0" SIGHUP SIGINT SIGTERM
 
       do_backup() {
-        local ts outfile start end
+        local ts outfile start end compress_opt
         ts=$(date -u "+%Y-%m-%d_%H-%M-%S")
-        outfile="/dump/dump_${ts}.psql"
-        log "Backup startet → Datei: ${outfile}"
+        outfile="/dump/dump_${ts}.dump"
+
+        # Kompressionsparameter (PG16+: Methode[:Level] moeglich)
+        if [ -n "${BACKUP_COMPRESS:-}" ]; then
+          compress_opt=(--compress="${BACKUP_COMPRESS}")
+        else
+          compress_opt=(--compress=6)
+        fi
+
+        log "Backup startet → Datei: ${outfile} (compress: ${BACKUP_COMPRESS:-6})"
         start=$$SECONDS
-        if pg_dump -h "$$PGHOST" -U "$$PGUSER" -d "$$PGDATABASE" -Fc -f "$$outfile" 2>"/dump/dump_${ts}.stderr.log"; then
+        if pg_dump -h "$$PGHOST" -U "$$PGUSER" -d "$$PGDATABASE" -Fc \
+                  "$${compress_opt[@]}" -f "$$outfile" \
+                  2>"/dump/dump_${ts}.stderr.log"; then
           end=$$SECONDS
           log "Backup OK (Dauer: $$((end-start))s, Groesse: $$(du -h "$$outfile" | awk '"'"'{print $$1}'"'"'))"
-          # leeres Fehlerlog ggf. entfernen
           [ -s "/dump/dump_${ts}.stderr.log" ] || rm -f "/dump/dump_${ts}.stderr.log"
         else
           end=$$SECONDS
@@ -87,7 +99,7 @@ services:
         local KEEP
         KEEP=$${BACKUP_NUM_KEEP:-3}
         shopt -s nullglob
-        mapfile -t sorted < <(ls -1t /dump/dump_*.psql 2>/dev/null || true)
+        mapfile -t sorted < <(ls -1t /dump/dump_*.dump 2>/dev/null || true)
         if (("$${#sorted[@]}" > KEEP)); then
           log "Rotation: behalte $$KEEP neueste, entferne $$(( $${#sorted[@]} - KEEP )) aeltere"
           printf "%s\0" "$${sorted[@]:KEEP}" | xargs -0 -r rm --
@@ -99,18 +111,16 @@ services:
         sleep 2
       done
       log "Datenbank erreichbar."
-
       mkdir -p /dump
 
-      # *** Sofort-Backup beim Start ***
+      # Sofort-Backup beim Start
       if ! do_backup; then
-        # nicht hart beenden: kurz warten und weitermachen (z. B. transienter Fehler)
         log "Erster Backup-Versuch fehlgeschlagen; neuer Versuch nach 60s"
         sleep 60
         do_backup || log "Warnung: Start-Backup wieder fehlgeschlagen"
       fi
 
-      # Regelmaessiger Loop
+      # Regelmaessige Backups
       while true; do
         sleep $${BACKUP_FREQUENCY:-8h}
         do_backup || log "Warnung: geplanter Backup-Versuch fehlgeschlagen"
