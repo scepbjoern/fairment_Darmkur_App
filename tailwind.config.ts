@@ -9,18 +9,45 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#0b0f14',
-        surface: '#121821',
+        background: {
+          light: '#f8fafc',
+          DEFAULT: '#0b0f14',
+        },
+        surface: {
+          light: '#ffffff',
+          DEFAULT: '#121821',
+        },
         primary: {
           DEFAULT: '#7dd3fc',
           foreground: '#0b0f14',
         },
-        muted: '#334155',
-        pill: '#1f2937',
+        muted: {
+          light: '#e2e8f0',
+          DEFAULT: '#334155',
+        },
+        pill: {
+          light: '#f1f5f9',
+          DEFAULT: '#1f2937',
+        },
+        border: {
+          light: '#e2e8f0',
+          DEFAULT: '#334155',
+        },
+      },
+      backgroundColor: {
+        'surface/60': 'rgba(18, 24, 33, 0.6)',
+        'surface/80': 'rgba(18, 24, 33, 0.8)',
       },
       borderRadius: {
         pill: '9999px',
       },
+    },
+  },
+  variants: {
+    extend: {
+      backgroundColor: ['dark'],
+      textColor: ['dark'],
+      borderColor: ['dark'],
     },
   },
   plugins: [],
