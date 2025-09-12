@@ -129,6 +129,8 @@ export default function HeutePage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingTime, setEditingTime] = useState<string>('')
   const [editingText, setEditingText] = useState<string>('')
+  const [remarksEditing, setRemarksEditing] = useState(false)
+  const [remarksText, setRemarksText] = useState('')
 
   function startEditNote(n: DayNote) {
     setEditingNoteId(n.id)
@@ -233,6 +235,13 @@ export default function HeutePage() {
     })()
     return () => { aborted = true }
   }, [date])
+
+  // Sync remarks editor with loaded day
+  useEffect(() => {
+    const has = !!(day?.notes && day.notes.trim())
+    setRemarksEditing(!has) // if no notes yet, start in edit mode
+    setRemarksText(day?.notes || '')
+  }, [day?.id, day?.notes])
 
   async function uploadPhotos(noteId: string, files: FileList | File[]) {
     try {
@@ -341,6 +350,19 @@ export default function HeutePage() {
     const data = await res.json()
     setDay(data.day)
     doneSaving()
+  }
+
+  async function saveRemarks() {
+    if (!day) return
+    await updateDayMeta({ notes: remarksText })
+    setRemarksEditing(false)
+  }
+
+  async function clearRemarks() {
+    if (!day) return
+    await updateDayMeta({ notes: '' })
+    setRemarksText('')
+    setRemarksEditing(true)
   }
 
   function shiftDate(cur: string, delta: number) {
@@ -478,7 +500,31 @@ export default function HeutePage() {
 
           <div className="card p-4 space-y-2">
             <h2 className="font-medium">Bemerkungen</h2>
-            <textarea className="w-full bg-background border border-slate-700 rounded p-2" rows={4} placeholder="Freitext…" defaultValue={day.notes ?? ''} onBlur={e => updateDayMeta({ notes: e.target.value })} />
+            {remarksEditing ? (
+              <>
+                <textarea
+                  value={remarksText}
+                  onChange={e => setRemarksText(e.target.value)}
+                  className="w-full bg-background border border-slate-700 rounded p-2"
+                  rows={(day?.notes && day.notes.trim()) ? 8 : 4}
+                  placeholder="Freitext…"
+                />
+                <div className="flex items-center gap-2">
+                  <button className="pill" onClick={saveRemarks}>Speichern</button>
+                  {(day?.notes && day.notes.trim()) ? (
+                    <button className="pill" onClick={clearRemarks}>Löschen</button>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <div className="whitespace-pre-wrap text-sm leading-5">{day?.notes}</div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button className="text-xs" title="Bearbeiten" onClick={() => setRemarksEditing(true)}>✏️</button>
+                  <button className="text-xs" title="Löschen" onClick={clearRemarks}>🗑️</button>
+                </div>
+              </div>
+            )}
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
 
