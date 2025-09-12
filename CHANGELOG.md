@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.4.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.3.0...v0.4.0) (2025-09-12)
+
+
+### Features
+
+* add edit mode and delete functionality for remarks section ([0fa6c89](https://github.com/scepbjoern/fairment_Darmkur_App/commit/0fa6c893708b05a77b48ff7e6b7c8cf33ad923ab))
+* add mobile user avatar menu with profile and logout options ([0cd21c6](https://github.com/scepbjoern/fairment_Darmkur_App/commit/0cd21c6661fb6346f6a07712f277ce913b6e429a))
+* add voice transcription inputs with OpenAI API integration ([ceed4ee](https://github.com/scepbjoern/fairment_Darmkur_App/commit/ceed4ee34749f8f01044c9939e9d2d226508f710))
+
 ## [0.3.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.2.1...v0.3.0) (2025-09-12)
 
 
