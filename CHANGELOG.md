@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.2.1...v0.3.0) (2025-09-12)
+
+
+### Features
+
+* add version number and social links to app footer ([5a9bcfc](https://github.com/scepbjoern/fairment_Darmkur_App/commit/5a9bcfc074d790c4c8ad6f69c2d4d28d3d150c0d))
+
 ## [0.2.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.2.0...v0.2.1) (2025-09-10)
 
 ## 0.2.0 (2025-09-10)
