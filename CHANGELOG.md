@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.4.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.0...v0.4.1) (2025-09-12)
 
+## [0.4.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.0...v0.4.1) (2025-09-12)
+
 ## [0.4.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.3.0...v0.4.0) (2025-09-12)
 
 
