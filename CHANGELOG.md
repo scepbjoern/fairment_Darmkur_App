@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.0.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.0.0...v1.0.1) (2025-09-12)
+
+
+### Features
+
+* add OpenAI transcription env vars to docker-compose config ([06e70a3](https://github.com/scepbjoern/fairment_Darmkur_App/commit/06e70a35c7ff59a00d5fa84425db4eafb75365f0))
+
+
+### Bug Fixes
+
+* use createRequire instead of JSON import assertions for better compatibility ([d717333](https://github.com/scepbjoern/fairment_Darmkur_App/commit/d717333f5efcf67ff35dc1f320a6bd4fc1984812))
+
 ## [1.0.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.3.0...v1.0.0) (2025-09-12)
 
 
