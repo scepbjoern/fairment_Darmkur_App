@@ -17,7 +17,7 @@
     "icons:convert": "tsx scripts/convert-icons.ts",
     "release": "commit-and-tag-version",
     "release:as": "commit-and-tag-version --release-as",
-    "postrelease": "git push --follow-tags origin HEAD && gh release create v%npm_package_version% -F CHANGELOG.md"
+    "postrelease": "node scripts/postrelease.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.16.1",
