@@ -136,6 +136,7 @@ export function SiteNav({ user }: { user: UserLite }) {
               <div className="flex flex-col gap-1">
                 <Link href="/export" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>Export</Link>
                 <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>Einstellungen</Link>
+                <Link href="/help" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>App-Hilfe</Link>
                 {canInstall && (
                   <button type="button" className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 text-left" onClick={() => { setMenuOpen(false); doInstall() }}>Installieren</button>
                 )}
@@ -257,6 +258,7 @@ export function SiteNav({ user }: { user: UserLite }) {
               </button>
             ))}
             <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Einstellungen</Link>
+            <Link href="/help" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>App-Hilfe</Link>
             {canInstall && (
               <button
                 type="button"

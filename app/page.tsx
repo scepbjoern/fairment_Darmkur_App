@@ -495,7 +495,7 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Habits</h2>
+            <h2 className="font-medium">Gewohnheiten</h2>
             <HabitChips habits={habits} ticks={day.habitTicks} onToggle={toggleHabit} />
           </div>
 

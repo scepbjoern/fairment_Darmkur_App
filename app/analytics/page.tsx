@@ -207,7 +207,7 @@ function WeeklyView() {
           <SparkArea data={stoolSeries} color="#0ea5e9" yDomain={[1, 7]} />
         </div>
         <div>
-          <div className="text-xs text-gray-400 mb-1">Habit-Erfüllung</div>
+          <div className="text-xs text-gray-400 mb-1">Gewohnheiten‑Erfüllung</div>
           <SparkArea data={habitSeries} color="#a855f7" yDomain={[0, 1]} />
         </div>
         {SYMPTOMS.map((sym) => (
@@ -277,7 +277,7 @@ function PhaseView() {
               <div className="text-lg">{data.metrics.stool.avg ?? '—'}</div>
             </div>
             <div className="p-3 rounded bg-surface/60 border border-slate-700">
-              <div className="text-xs text-gray-400">Habits ∅</div>
+              <div className="text-xs text-gray-400">Gewohnheiten ∅</div>
               <div className="text-lg">{data.metrics.habitFulfillment.avg ?? '—'}</div>
             </div>
             {SYMPTOMS.map(s => (
@@ -315,7 +315,7 @@ function PhaseView() {
               </ResponsiveContainer>
             </div>
             <div>
-              <div className="text-xs text-gray-400 mb-1">Habit-Erfüllung</div>
+              <div className="text-xs text-gray-400 mb-1">Gewohnheiten‑Erfüllung</div>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={toSeries(data.series.dates, data.series.habitFulfillment)} margin={{ left: 6, right: 6, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
