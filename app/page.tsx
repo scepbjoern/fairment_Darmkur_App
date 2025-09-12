@@ -4,6 +4,7 @@ import { NumberPills } from '@/components/NumberPills'
 import { HabitChips } from '@/components/HabitChips'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
 import { CameraPicker } from '@/components/CameraPicker'
+import { MicrophoneButton } from '@/components/MicrophoneButton'
 
 const SYMPTOM_LABELS: Record<string, string> = {
   BESCHWERDEFREIHEIT: 'Beschwerdefreiheit',
@@ -510,6 +511,11 @@ export default function HeutePage() {
                   placeholder="Freitext…"
                 />
                 <div className="flex items-center gap-2">
+                  <MicrophoneButton
+                    onText={(t) => setRemarksText(prev => prev ? (prev + ' ' + t) : t)}
+                    className="text-gray-300 hover:text-gray-100"
+                    compact
+                  />
                   <button className="pill" onClick={saveRemarks}>Speichern</button>
                   {(day?.notes && day.notes.trim()) ? (
                     <button className="pill" onClick={clearRemarks}>Löschen</button>
@@ -608,7 +614,14 @@ export default function HeutePage() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2">
               <input type="time" value={mealTime} onChange={e => setMealTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-sm w-full sm:w-auto" />
               <textarea value={mealText} onChange={e => setMealText(e.target.value)} placeholder="Beschreibung…" className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm w-full" rows={3} />
-              <button className="pill w-full sm:w-auto" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
+              <div className="flex items-center gap-2">
+                <MicrophoneButton
+                  onText={(t) => setMealText(prev => prev ? (prev + ' ' + t) : t)}
+                  className="text-gray-300 hover:text-gray-100 text-xs"
+                  compact
+                />
+                <button className="pill w-full sm:w-auto" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
+              </div>
             </div>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
