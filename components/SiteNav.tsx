@@ -188,14 +188,58 @@ export function SiteNav({ user }: { user: UserLite }) {
         </div>
       </nav>
 
-      {/* Mobile: hamburger */}
-      <button
-        aria-label="Menü öffnen"
-        className="md:hidden text-gray-300 hover:text-white"
-        onClick={() => setOpen(v => !v)}
-      >
-        ☰
-      </button>
+      {/* Mobile: controls row */}
+      <div className="md:hidden flex items-center gap-3">
+        <button
+          aria-label="Menü öffnen"
+          className="text-gray-300 hover:text-white"
+          onClick={() => setOpen(v => !v)}
+        >
+          ☰
+        </button>
+        {/* Mobile: user avatar menu */}
+        <div className="relative" ref={userMenuRef}>
+          {user ? (
+            <button className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-600" onClick={() => setUserMenuOpen(v => !v)} aria-haspopup="menu" aria-expanded={userMenuOpen}>
+              {user.profileImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs text-gray-200 font-semibold">{(user.displayName || user.username || '?').slice(0,1).toUpperCase()}</span>
+              )}
+            </button>
+          ) : (
+            <Link href="/login" className="text-gray-300 hover:text-white">Login</Link>
+          )}
+          {user && userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-surface border border-slate-800 rounded-xl shadow-lg p-3 z-30" role="menu">
+              <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
+                <div className="h-10 w-10 rounded-full bg-slate-700 overflow-hidden border border-slate-600">
+                  {user.profileImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-sm text-gray-200 font-semibold">
+                      {(user.displayName || user.username || '?').slice(0,1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{user.displayName || user.username}</div>
+                  <div className="text-xs text-gray-400 truncate">@{user.username}</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 pt-2">
+                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setUserMenuOpen(false)}>Profil ändern</Link>
+                <button
+                  className="px-3 py-2 rounded text-left hover:bg-pill"
+                  onClick={async () => { try { await fetch('/api/auth/logout', { method: 'POST' }) } finally { window.location.href = '/login' } }}
+                >Abmelden</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Mobile menu panel */}
       {open && (
