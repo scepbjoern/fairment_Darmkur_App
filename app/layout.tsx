@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { SiteNav } from '@/components/SiteNav'
+import pkg from '../package.json'
 
 export const metadata = {
   title: 'Darmkur App',
@@ -51,6 +52,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const themeCookie = cookieStore.get('theme')?.value || ''
   const t = (user?.settings?.theme || themeCookie || '').toLowerCase()
   const theme: 'dark' | 'bright' = (t === 'bright' || t === 'light') ? 'bright' : 'dark'
+  const version = (pkg as any)?.version || '0.0.0'
+
   
   return (
     <html 
@@ -103,7 +106,29 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           {children}
         </main>
         <footer className="border-t border-slate-800 bg-surface/80">
-          <div className="container py-2 text-xs text-gray-400">Darmkur App</div>
+          <div className="container py-2 text-xs text-gray-400 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+            <span>
+              Version {version}
+            </span>
+            <span className="hidden sm:inline">•</span>
+            <a
+              href="https://github.com/scepbjoern/fairment_Darmkur_App"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="hover:underline"
+            >
+              GitHub
+            </a>
+            <span className="hidden sm:inline">•</span>
+            <a
+              href="https://www.linkedin.com/in/bjoern-scheppler/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="hover:underline"
+            >
+              Autor
+            </a>
+          </div>
         </footer>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
