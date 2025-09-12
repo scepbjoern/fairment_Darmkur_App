@@ -1,6 +1,6 @@
 {
   "name": "fairment-darmkur-app",
-  "version": "0.4.1",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "db:studio": "prisma studio",
     "icons:convert": "tsx scripts/convert-icons.ts",
     "release": "commit-and-tag-version",
+    "release:as": "commit-and-tag-version --release-as",
     "postrelease": "git push --follow-tags origin HEAD && gh release create v%npm_package_version% -F CHANGELOG.md"
   },
   "dependencies": {
