@@ -54,10 +54,18 @@ function fmtHMLocal(iso?: string) {
   return `${hh}:${mm}`
 }
 
+function fmtDmyFromYmd(ymdStr: string) {
+  const [y, m, d] = (ymdStr || '').split('-')
+  if (!y || !m || !d) return ymdStr
+  const dd = String(parseInt(d, 10))
+  const mm = String(parseInt(m, 10))
+  return `${dd}.${mm}.${y}`
+}
+
 // Simple calendar that shows current month and highlights days with data
 function Calendar(props: { date: string; daysWithData: Set<string>; reflectionDays: Set<string>; onSelect: (d: string) => void }) {
   const { date, daysWithData, reflectionDays, onSelect } = props
-  const [y, m, d] = date.split('-').map(n => parseInt(n, 10))
+  const [y, m, _d] = date.split('-').map(n => parseInt(n, 10))
   const firstOfMonth = new Date(y, (m || 1) - 1, 1)
   const startWeekDay = (firstOfMonth.getDay() + 6) % 7 // 0=Mon
   const daysInMonth = new Date(y, (m || 1), 0).getDate()
@@ -403,7 +411,7 @@ export default function HeutePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Tagebuch</h1>
+        <h1 className="text-xl font-semibold">Tagebuch {fmtDmyFromYmd(date)}</h1>
         <div className="flex items-center gap-2">
           <button aria-label="Vorheriger Tag" className="pill" onClick={() => setDate(d => shiftDate(d, -1))}>‹</button>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-surface border border-slate-700 rounded px-2 py-1 text-sm" />

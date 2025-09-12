@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Local enums to avoid build-time dependency on generated Prisma enums
-const Phases = ['PHASE_1', 'PHASE_2', 'PHASE_3'] as const
-export type Phase = typeof Phases[number]
-const CareCategories = ['SANFT', 'MEDIUM', 'INTENSIV'] as const
-export type CareCategory = typeof CareCategories[number]
-const NoteTypes = ['MEAL', 'REFLECTION'] as const
-export type NoteType = typeof NoteTypes[number]
+const _Phases = ['PHASE_1', 'PHASE_2', 'PHASE_3'] as const
+export type Phase = typeof _Phases[number]
+const _CareCategories = ['SANFT', 'MEDIUM', 'INTENSIV'] as const
+export type CareCategory = typeof _CareCategories[number]
+const _NoteTypes = ['MEAL', 'REFLECTION'] as const
+export type NoteType = typeof _NoteTypes[number]
 
 export async function GET(req: NextRequest) {
+  const prisma = getPrisma()
   const { searchParams } = new URL(req.url)
   const dateStr = searchParams.get('date') ?? toYmdLocal(new Date())
   const { start, end } = getDayRange(dateStr)

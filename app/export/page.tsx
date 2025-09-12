@@ -5,7 +5,7 @@ export default function ExportPage() {
   const [from, setFrom] = useState<string>('')
   const [to, setTo] = useState<string>('')
   const [withPhotos, setWithPhotos] = useState<boolean>(false)
-  const [thumb, setThumb] = useState<number>(500)
+  const [thumb, setThumb] = useState<number>(200)
 
   const clampedThumb = Math.max(50, Math.min(1000, Number(thumb) || 500))
 

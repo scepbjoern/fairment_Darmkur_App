@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
+
+// Run on Node.js and disable static evaluation
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Physical uploads base directory (mounted in Docker). Keep in sync with upload API and uploads route.
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')
@@ -19,6 +23,7 @@ function resolveUploadPathFromUrl(url: string): string | null {
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ photoId: string }> }) {
   const { photoId } = await context.params
+  const prisma = getPrisma()
 
   const cookieUserId = req.cookies.get('userId')?.value
   let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null

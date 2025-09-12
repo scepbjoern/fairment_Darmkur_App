@@ -72,8 +72,8 @@ export function MicrophoneButton(props: {
         try {
           const blob = new Blob(chunksRef.current, { type: rec.mimeType || 'audio/webm' })
           await sendForTranscription(blob)
-        } catch (e: any) {
-          setError(e?.message || 'Transkription fehlgeschlagen')
+        } catch (e: unknown) {
+          setError(e instanceof Error ? e.message : 'Transkription fehlgeschlagen')
         } finally {
           cleanup()
         }
@@ -81,8 +81,8 @@ export function MicrophoneButton(props: {
       recorderRef.current = rec
       rec.start()
       setRecording(true)
-    } catch (e: any) {
-      setError(e?.message || 'Mikrofon nicht verfügbar')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Mikrofon nicht verfügbar')
       cleanup()
     }
   }
@@ -109,8 +109,10 @@ export function MicrophoneButton(props: {
       'audio/mp4',
       'audio/mpeg'
     ]
+    // Only rely on presence of MediaRecorder and its static isTypeSupported
+    const MR = (globalThis as unknown as { MediaRecorder?: { isTypeSupported?: (m: string) => boolean } }).MediaRecorder
     for (const m of candidates) {
-      if ((window as any).MediaRecorder && MediaRecorder.isTypeSupported?.(m)) return m
+      if (MR && typeof MR.isTypeSupported === 'function' && MR.isTypeSupported(m)) return m
     }
     return null
   }
@@ -150,7 +152,16 @@ export function MicrophoneButton(props: {
           className || ''
         ].join(' ')}
         onClick={() => (recording ? stopRec() : startRec())}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (recording ? stopRec() : startRec()) } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            if (recording) {
+              stopRec()
+            } else {
+              startRec()
+            }
+          }
+        }}
       >
         {recording ? '⏹️' : '🎙️'}
       </span>

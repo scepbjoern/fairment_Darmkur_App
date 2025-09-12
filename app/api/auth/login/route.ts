@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest) {
+  const prisma = getPrisma()
   const body = await req.json().catch(() => ({}))
   const username = String(body?.username || '').trim()
   const password = String(body?.password || '').trim()

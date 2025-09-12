@@ -1,9 +1,11 @@
-self.addEventListener('install', (event) => {
+/* eslint-env serviceworker */
+
+self.addEventListener('install', (_event) => {
   self.skipWaiting()
 })
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim())
+self.addEventListener('activate', (_event) => {
+  _event.waitUntil(clients.claim())
 })
 
 // No fetch handler: rely on network. Add caching here if needed later.

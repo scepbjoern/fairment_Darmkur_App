@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const SYMPTOMS = [
   'BESCHWERDEFREIHEIT',
@@ -33,6 +34,7 @@ function parseYmdLocal(s: string): Date | null {
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const url = new URL(req.url)
     const fromParam = url.searchParams.get('from')
     const toParam = url.searchParams.get('to')

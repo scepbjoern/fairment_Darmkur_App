@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import path from 'path'
 import fs from 'fs/promises'
 import sharp from 'sharp'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const SYMPTOMS = [
   'BESCHWERDEFREIHEIT',
@@ -46,6 +47,7 @@ function parseYmdLocal(s: string | null): Date | null {
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const url = new URL(req.url)
     const fromParam = url.searchParams.get('from')
     const toParam = url.searchParams.get('to')

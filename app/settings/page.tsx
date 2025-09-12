@@ -58,10 +58,10 @@ export default function SettingsPage() {
   const [dragging, setDragging] = useState(false)
   const [lastPt, setLastPt] = useState<{ x: number; y: number } | null>(null)
 
-  // Export state
-  const [expFrom, setExpFrom] = useState<string>('')
-  const [expTo, setExpTo] = useState<string>('')
-  const [expPhotos, setExpPhotos] = useState<boolean>(false)
+  // Export state (currently unused; keep for future use)
+  const [_expFrom, _setExpFrom] = useState<string>('')
+  const [_expTo, _setExpTo] = useState<string>('')
+  const [_expPhotos, _setExpPhotos] = useState<boolean>(false)
 
   async function load() {
     try {
@@ -418,7 +418,6 @@ export default function SettingsPage() {
         <div className="flex items-center gap-3 pt-2">
           <div className="h-12 w-12 rounded-full overflow-hidden border border-slate-700 bg-surface flex items-center justify-center">
             {me?.profileImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={me.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
             ) : (
               <span className="text-sm text-gray-300 font-semibold">{(displayName || username || '?').slice(0,1).toUpperCase()}</span>

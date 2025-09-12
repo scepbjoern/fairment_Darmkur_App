@@ -28,7 +28,7 @@ export default function RegisterPage() {
         router.push('/')
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError('Netzwerkfehler')
     } finally {
       setLoading(false)

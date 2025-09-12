@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function toYmdLocal(d: Date) {
   const dt = new Date(d)
@@ -17,6 +20,7 @@ function getMonthRange(ym: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const prisma = getPrisma()
   const { searchParams } = new URL(req.url)
   const monthStr = searchParams.get('month') // YYYY-MM
   if (!monthStr) {

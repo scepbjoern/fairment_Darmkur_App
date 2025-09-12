@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
   try {
+    const prisma = getPrisma()
     const body = await req.json().catch(() => ({} as any))
     const userSymptomId = String(body?.userSymptomId || '')
     const score = Number(body?.score)
@@ -33,6 +37,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 }
 
 async function buildDayPayload(dayId: string) {
+  const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id: dayId } })
   if (!day) throw new Error('Day not found')
   const habits: { id: string; title: string }[] = await prisma.habit.findMany({ where: { isActive: true, OR: [{ userId: null }, { userId: day.userId }] }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } })

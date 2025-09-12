@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Local enums to avoid build-time dependency on generated Prisma enums
 const Phases = ['PHASE_1', 'PHASE_2', 'PHASE_3'] as const
@@ -9,6 +12,7 @@ export type CareCategory = typeof CareCategories[number]
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
+  const prisma = getPrisma()
   const body = await req.json().catch(() => ({}))
 
   const day = await prisma.dayEntry.findUnique({ where: { id } })
@@ -32,6 +36,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 }
 
 async function buildDayPayload(dayId: string) {
+  const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id: dayId } })
   if (!day) throw new Error('Day not found after update')
   const habits: { id: string; title: string }[] = await prisma.habit.findMany({ where: { isActive: true, OR: [{ userId: null }, { userId: day.userId }] }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } })
@@ -41,8 +46,14 @@ async function buildDayPayload(dayId: string) {
   const stoolRow = await prisma.stoolScore.findUnique({ where: { dayEntryId: day.id } })
   const tickRows: { habitId: string; checked: boolean }[] = await prisma.habitTick.findMany({ where: { dayEntryId: day.id } })
   const ticks = habits.map((h: { id: string }) => ({ habitId: h.id, checked: Boolean(tickRows.find((t: { habitId: string; checked: boolean }) => t.habitId === h.id)?.checked) }))
+  // Custom user-defined symptoms
+  const userSymptoms = await (prisma as any).userSymptom.findMany({ where: { userId: day.userId, isActive: true }, orderBy: { sortIndex: 'asc' }, select: { id: true, title: true } })
+  const scores = await (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: day.id } })
+  const scoreById = new Map<string, number>()
+  for (const s of scores) scoreById.set(s.userSymptomId, s.score)
+  const userSymptomsOut = (userSymptoms as any[]).map((u: any) => ({ id: u.id, title: u.title, score: scoreById.get(u.id) }))
   const dateStr = toYmd(day.date)
-  return { id: day.id, date: dateStr, phase: day.phase, careCategory: day.careCategory, notes: day.notes ?? '', symptoms, stool: stoolRow?.bristol ?? undefined, habitTicks: ticks }
+  return { id: day.id, date: dateStr, phase: day.phase, careCategory: day.careCategory, notes: day.notes ?? '', symptoms, stool: stoolRow?.bristol ?? undefined, habitTicks: ticks, userSymptoms: userSymptomsOut }
 }
 
 function toYmd(d: Date) {

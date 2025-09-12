@@ -5,27 +5,36 @@ import { AuthNav } from '@/components/AuthNav'
 
 type UserLite = { id: string; username: string; displayName: string | null; profileImageUrl?: string | null } | null
 
+// Minimal PWA install prompt event typing
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => void
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export function SiteNav({ user }: { user: UserLite }) {
   const [open, setOpen] = useState(false)
-  const [installEvt, setInstallEvt] = useState<any>(null)
+  const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null)
   const [linksOpen, setLinksOpen] = useState(false)
   const linksRef = useRef<HTMLDivElement | null>(null)
   const [customLinks, setCustomLinks] = useState<{ id: string; name: string; url: string }[]>([])
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement | null>(null)
+  const userMenuRefDesktop = useRef<HTMLDivElement | null>(null)
+  const userMenuRefMobile = useRef<HTMLDivElement | null>(null)
+  const [mobileLinksOpen, setMobileLinksOpen] = useState(false)
 
   // Listen for install prompt availability
   useEffect(() => {
-    const handler = (e: any) => {
+    const onBeforeInstallPrompt = (ev: Event) => {
+      const e = ev as unknown as BeforeInstallPromptEvent
       e.preventDefault()
       setInstallEvt(e)
     }
     const onInstalled = () => setInstallEvt(null)
-    window.addEventListener('beforeinstallprompt', handler as any)
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
     window.addEventListener('appinstalled', onInstalled)
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler as any)
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
     }
   }, [])
@@ -35,11 +44,14 @@ export function SiteNav({ user }: { user: UserLite }) {
     function onDocMouseDown(e: MouseEvent) {
       const el = linksRef.current
       if (linksOpen && el && !el.contains(e.target as Node)) setLinksOpen(false)
-      const uel = userMenuRef.current
-      if (userMenuOpen && uel && !uel.contains(e.target as Node)) setUserMenuOpen(false)
+      const uelD = userMenuRefDesktop.current
+      const uelM = userMenuRefMobile.current
+      const insideDesktop = !!(uelD && uelD.contains(e.target as Node))
+      const insideMobile = !!(uelM && uelM.contains(e.target as Node))
+      if (userMenuOpen && !insideDesktop && !insideMobile) setUserMenuOpen(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setLinksOpen(false); setUserMenuOpen(false); setMenuOpen(false) }
+      if (e.key === 'Escape') { setLinksOpen(false); setUserMenuOpen(false); setMenuOpen(false); setMobileLinksOpen(false) }
     }
     document.addEventListener('mousedown', onDocMouseDown)
     document.addEventListener('keydown', onKey)
@@ -47,14 +59,14 @@ export function SiteNav({ user }: { user: UserLite }) {
       document.removeEventListener('mousedown', onDocMouseDown)
       document.removeEventListener('keydown', onKey)
     }
-  }, [linksOpen, userMenuOpen, menuOpen])
+  }, [linksOpen, userMenuOpen, menuOpen, mobileLinksOpen])
 
   const canInstall = Boolean(installEvt)
   const doInstall = async () => {
     try {
       if (!installEvt) return
       installEvt.prompt()
-      const { outcome } = await installEvt.userChoice
+      const { outcome: _outcome } = await installEvt.userChoice
       // After a choice, Chrome may not re-fire the event until next visit
       setInstallEvt(null)
       // Optionally: analytics based on outcome ('accepted' | 'dismissed')
@@ -63,7 +75,7 @@ export function SiteNav({ user }: { user: UserLite }) {
     }
   }
 
-  function close() { setOpen(false) }
+  function close() { setOpen(false); setMobileLinksOpen(false) }
 
   // Load user-defined links for submenu
   useEffect(() => {
@@ -102,25 +114,25 @@ export function SiteNav({ user }: { user: UserLite }) {
     <div className="relative">
       {/* Desktop nav */}
       <nav className="hidden md:flex items-center gap-4">
-        <Link href="/" className="text-gray-300 hover:text-white">Tagebuch</Link>
-        <Link href="/reflections" className="text-gray-300 hover:text-white">Reflexionen</Link>
-        <Link href="/analytics" className="text-gray-300 hover:text-white">Auswertungen</Link>
+        <Link href="/" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Tagebuch</Link>
+        <Link href="/reflections" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Reflexionen</Link>
+        <Link href="/analytics" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Auswertungen</Link>
         {/* Links submenu (desktop) */}
         <div className="relative" ref={linksRef}>
-          <button type="button" className="text-gray-300 hover:text-white" onMouseEnter={() => setLinksOpen(true)} onClick={() => setLinksOpen(v => !v)} aria-expanded={linksOpen} aria-haspopup="menu">
+          <button type="button" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onMouseEnter={() => setLinksOpen(true)} onClick={() => setLinksOpen(v => !v)} aria-expanded={linksOpen} aria-haspopup="menu">
             Links ▾
           </button>
           {linksOpen && (
             <div className="absolute right-0 mt-2 w-72 bg-surface border border-slate-800 rounded-xl shadow-lg p-2 z-30" onMouseEnter={() => setLinksOpen(true)}>
               <div className="flex flex-col gap-1">
                 {staticLinks.map(l => (
-                  <button key={`static-${l.name}`} className="text-left px-3 py-2 rounded hover:bg-pill" onClick={() => { openExternal(l.url); setLinksOpen(false) }}>
+                  <button key={`static-${l.name}`} className="text-left px-3 py-2 rounded hover:bg-pill text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => { openExternal(l.url); setLinksOpen(false) }}>
                     {l.name}
                   </button>
                 ))}
                 {customLinks.length > 0 && <div className="h-px bg-slate-800 my-1" />}
                 {customLinks.map(l => (
-                  <button key={l.id} className="text-left px-3 py-2 rounded hover:bg-pill" onClick={() => { openExternal(l.url); setLinksOpen(false) }}>
+                  <button key={l.id} className="text-left px-3 py-2 rounded hover:bg-pill text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => { openExternal(l.url); setLinksOpen(false) }}>
                     {l.name}
                   </button>
                 ))}
@@ -130,13 +142,13 @@ export function SiteNav({ user }: { user: UserLite }) {
         </div>
         {/* Desktop: hamburger for secondary items */}
         <div className="relative">
-          <button aria-label="Menü" className="text-gray-300 hover:text-white" onClick={() => setMenuOpen(v => !v)}>☰</button>
+          <button aria-label="Menü" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setMenuOpen(v => !v)}>☰</button>
           {menuOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-surface border border-slate-800 rounded-xl shadow-lg p-2 z-30" role="menu">
               <div className="flex flex-col gap-1">
-                <Link href="/export" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>Export</Link>
-                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>Einstellungen</Link>
-                <Link href="/help" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setMenuOpen(false)}>App-Hilfe</Link>
+                <Link href="/export" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setMenuOpen(false)}>Export</Link>
+                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setMenuOpen(false)}>Einstellungen</Link>
+                <Link href="/help" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setMenuOpen(false)}>App-Hilfe</Link>
                 {canInstall && (
                   <button type="button" className="px-3 py-2 rounded bg-primary text-primary-foreground hover:bg-primary/90 text-left" onClick={() => { setMenuOpen(false); doInstall() }}>Installieren</button>
                 )}
@@ -146,25 +158,23 @@ export function SiteNav({ user }: { user: UserLite }) {
         </div>
 
         {/* User avatar menu */}
-        <div className="relative" ref={userMenuRef}>
+        <div className="relative" ref={userMenuRefDesktop}>
           {user ? (
             <button className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-600" onClick={() => setUserMenuOpen(v => !v)} aria-haspopup="menu" aria-expanded={userMenuOpen}>
               {user.profileImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs text-gray-200 font-semibold">{(user.displayName || user.username || '?').slice(0,1).toUpperCase()}</span>
               )}
             </button>
           ) : (
-            <Link href="/login" className="text-gray-300 hover:text-white">Login</Link>
+            <Link href="/login" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Login</Link>
           )}
           {user && userMenuOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-surface border border-slate-800 rounded-xl shadow-lg p-3 z-30" role="menu">
               <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
                 <div className="h-10 w-10 rounded-full bg-slate-700 overflow-hidden border border-slate-600">
                   {user.profileImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-sm text-gray-200 font-semibold">
@@ -178,9 +188,9 @@ export function SiteNav({ user }: { user: UserLite }) {
                 </div>
               </div>
               <div className="flex flex-col gap-1 pt-2">
-                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setUserMenuOpen(false)}>Profil ändern</Link>
+                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setUserMenuOpen(false)}>Profil ändern</Link>
                 <button
-                  className="px-3 py-2 rounded text-left hover:bg-pill"
+                  className="px-3 py-2 rounded text-left hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                   onClick={async () => { try { await fetch('/api/auth/logout', { method: 'POST' }) } finally { window.location.href = '/login' } }}
                 >Abmelden</button>
               </div>
@@ -193,31 +203,29 @@ export function SiteNav({ user }: { user: UserLite }) {
       <div className="md:hidden flex items-center gap-3">
         <button
           aria-label="Menü öffnen"
-          className="text-gray-300 hover:text-white"
+          className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
           onClick={() => setOpen(v => !v)}
         >
           ☰
         </button>
         {/* Mobile: user avatar menu */}
-        <div className="relative" ref={userMenuRef}>
+        <div className="relative" ref={userMenuRefMobile}>
           {user ? (
             <button className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden border border-slate-600" onClick={() => setUserMenuOpen(v => !v)} aria-haspopup="menu" aria-expanded={userMenuOpen}>
               {user.profileImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs text-gray-200 font-semibold">{(user.displayName || user.username || '?').slice(0,1).toUpperCase()}</span>
               )}
             </button>
           ) : (
-            <Link href="/login" className="text-gray-300 hover:text-white">Login</Link>
+            <Link href="/login" className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">Login</Link>
           )}
           {user && userMenuOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-surface border border-slate-800 rounded-xl shadow-lg p-3 z-30" role="menu">
               <div className="flex items-center gap-3 pb-2 border-b border-slate-800">
                 <div className="h-10 w-10 rounded-full bg-slate-700 overflow-hidden border border-slate-600">
                   {user.profileImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.profileImageUrl} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-sm text-gray-200 font-semibold">
@@ -231,9 +239,9 @@ export function SiteNav({ user }: { user: UserLite }) {
                 </div>
               </div>
               <div className="flex flex-col gap-1 pt-2">
-                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={() => setUserMenuOpen(false)}>Profil ändern</Link>
+                <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => setUserMenuOpen(false)}>Profil ändern</Link>
                 <button
-                  className="px-3 py-2 rounded text-left hover:bg-pill"
+                  className="px-3 py-2 rounded text-left hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
                   onClick={async () => { try { await fetch('/api/auth/logout', { method: 'POST' }) } finally { window.location.href = '/login' } }}
                 >Abmelden</button>
               </div>
@@ -246,19 +254,32 @@ export function SiteNav({ user }: { user: UserLite }) {
       {open && (
         <div className="absolute right-0 mt-2 w-56 bg-surface border border-slate-800 rounded-xl shadow-lg p-2 md:hidden z-20">
           <div className="flex flex-col gap-1">
-            <Link href="/" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Tagebuch</Link>
-            <Link href="/analytics" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Auswertungen</Link>
-            <Link href="/reflections" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Reflexionen</Link>
-            <Link href="/export" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Export</Link>
-            {/* Links submenu (mobile): render as simple list */}
-            <div className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-gray-400">Links</div>
-            {[...staticLinks, ...customLinks].map((l, idx) => (
-              <button key={`m-${'id' in l ? l.id : idx}`} className="px-3 py-2 rounded text-left hover:bg-pill" onClick={() => { close(); openExternal(l.url) }}>
-                {l.name}
-              </button>
-            ))}
-            <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>Einstellungen</Link>
-            <Link href="/help" className="px-3 py-2 rounded hover:bg-pill" onClick={close}>App-Hilfe</Link>
+            <Link href="/" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>Tagebuch</Link>
+            <Link href="/analytics" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>Auswertungen</Link>
+            <Link href="/reflections" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>Reflexionen</Link>
+            <Link href="/export" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>Export</Link>
+            {/* Links submenu (mobile): collapsible */}
+            <button
+              type="button"
+              className="px-3 py-2 rounded text-left hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white flex items-center justify-between"
+              onClick={() => setMobileLinksOpen(v => !v)}
+              aria-expanded={mobileLinksOpen}
+              aria-controls="mobile-links-submenu"
+            >
+              <span>Links</span>
+              <span>{mobileLinksOpen ? '▴' : '▾'}</span>
+            </button>
+            {mobileLinksOpen && (
+              <div id="mobile-links-submenu" className="pl-2">
+                {[...staticLinks, ...customLinks].map((l, idx) => (
+                  <button key={`m-${'id' in l ? l.id : idx}`} className="w-full px-3 py-2 rounded text-left hover:bg-pill text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={() => { close(); openExternal(l.url) }}>
+                    {l.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Link href="/settings" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>Einstellungen</Link>
+            <Link href="/help" className="px-3 py-2 rounded hover:bg-pill text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" onClick={close}>App-Hilfe</Link>
             {canInstall && (
               <button
                 type="button"

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 // Symptom enum names from Prisma schema
 const SYMPTOMS = [
@@ -46,6 +47,7 @@ function startOfWeekLocal(d: Date, weekStart: 'mon' | 'sun'): Date {
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const url = new URL(req.url)
     const fromParam = url.searchParams.get('from')
 

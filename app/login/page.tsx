@@ -30,7 +30,7 @@ export default function LoginPage() {
         router.push(nextUrl)
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError('Netzwerkfehler')
     } finally {
       setLoading(false)

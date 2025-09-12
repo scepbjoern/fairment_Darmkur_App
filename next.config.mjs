@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // We use flat config; tell Next not to attempt its plugin detection
+    ignoreDuringBuilds: false, // keep lint in CI
+  },
   reactStrictMode: true,
   experimental: {
     serverActions: {

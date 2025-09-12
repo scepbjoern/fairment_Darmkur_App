@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
 import { constants as fsConstants } from 'fs'
@@ -22,8 +22,12 @@ function nowIsoTime() {
   return new Date().toISOString().replace(/[:.]/g, '-')
 }
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const prisma = getPrisma()
     const { id } = await context.params
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null

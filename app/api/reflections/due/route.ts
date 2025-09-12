@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
     if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })

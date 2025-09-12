@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  const prisma = getPrisma()
   const cookieUserId = req.cookies.get('userId')?.value
   let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
   if (!user) {
@@ -28,6 +32,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
     if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })

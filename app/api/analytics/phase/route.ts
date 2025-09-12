@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const SYMPTOMS = [
   'BESCHWERDEFREIHEIT',
@@ -27,6 +28,7 @@ function toYmd(d: Date): string {
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const url = new URL(req.url)
     const phaseParam = (url.searchParams.get('phase') || 'PHASE_1').toUpperCase()
     const phase: PhaseKey = (['PHASE_1', 'PHASE_2', 'PHASE_3'] as const).includes(phaseParam as PhaseKey)

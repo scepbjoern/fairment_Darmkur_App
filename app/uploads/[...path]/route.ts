@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import path from 'path'
 import fs from 'fs/promises'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // Physical uploads base directory. Defaults to "/app/uploads" (process.cwd()/uploads)
 const UPLOADS_BASE = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')
 // Legacy fallback for older images saved under public/uploads
@@ -43,7 +46,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ path: stri
     }
     // Resolve in current uploads base first, then fallback to legacy public/uploads
     let filePath = safeResolveFrom(UPLOADS_BASE, parts)
-    let legacyPath = safeResolveFrom(LEGACY_BASE, parts)
+    const legacyPath = safeResolveFrom(LEGACY_BASE, parts)
     if (!filePath && !legacyPath) {
       const h = new Headers()
       h.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')

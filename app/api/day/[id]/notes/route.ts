@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Local NoteType definitions to avoid build-time dependency on generated Prisma enums
 const NoteTypes = ['MEAL', 'REFLECTION'] as const
@@ -7,6 +10,7 @@ export type NoteType = typeof NoteTypes[number]
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params
+  const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id } })
   if (!day) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 

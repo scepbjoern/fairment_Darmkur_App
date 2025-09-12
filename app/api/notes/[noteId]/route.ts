@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
+
+// Ensure this route is always executed at request time on the Node.js runtime
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 // Local NoteType to avoid build-time dependency on generated Prisma enums
 const NoteTypes = ['MEAL', 'REFLECTION'] as const
@@ -22,6 +26,7 @@ function resolveUploadPathFromUrl(url: string): string | null {
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ noteId: string }> }) {
   const { noteId } = await context.params
+  const prisma = getPrisma()
   const body = await req.json().catch(() => ({} as any))
 
   const cookieUserId = req.cookies.get('userId')?.value
@@ -72,6 +77,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ noteI
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ noteId: string }> }) {
   const { noteId } = await context.params
+  const prisma = getPrisma()
 
   const cookieUserId = req.cookies.get('userId')?.value
   let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null

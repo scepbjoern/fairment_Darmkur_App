@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
 
 const SYMPTOMS = [
   'BESCHWERDEFREIHEIT',
@@ -25,6 +26,7 @@ function toYmd(d: Date): string {
 
 export async function GET(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     // Resolve user from cookie; fallback to demo; if still missing, return consistent empty shapes
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
 import { constants as fsConstants } from 'fs'
 import sharp from 'sharp'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 const UPLOADS_BASE = process.env.UPLOADS_DIR || path.join(process.cwd(), 'uploads')
 
@@ -19,6 +22,7 @@ async function ensureUploadDirForUser(userId: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
     if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })
@@ -65,7 +69,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const updated = await prisma.user.update({ where: { id: user.id }, data: { profileImageUrl: url } })
+    await prisma.user.update({ where: { id: user.id }, data: { profileImageUrl: url } })
 
     return NextResponse.json({ ok: true, url })
   } catch (err) {
@@ -76,6 +80,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const prisma = getPrisma()
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null
     if (!user) user = await prisma.user.findUnique({ where: { username: 'demo' } })

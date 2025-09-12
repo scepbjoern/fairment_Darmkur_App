@@ -49,7 +49,7 @@ export function CameraPicker({
         videoRef.current.srcObject = stream
         await videoRef.current.play().catch(() => {})
       }
-    } catch (err) {
+    } catch {
       // Permission denied or no camera
       stop()
       setOpen(false)

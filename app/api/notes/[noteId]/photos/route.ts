@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import path from 'path'
 import fs from 'fs/promises'
 import { constants as fsConstants } from 'fs'
@@ -25,6 +25,7 @@ function nowIsoTime() {
 
 export async function POST(req: NextRequest, context: { params: Promise<{ noteId: string }> }) {
   try {
+    const prisma = getPrisma()
     const { noteId } = await context.params
     const cookieUserId = req.cookies.get('userId')?.value
     let user = cookieUserId ? await prisma.user.findUnique({ where: { id: cookieUserId } }) : null

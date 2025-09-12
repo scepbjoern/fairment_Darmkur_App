@@ -2,7 +2,7 @@ import './globals.css'
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cookies } from 'next/headers'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { SiteNav } from '@/components/SiteNav'
 import pkg from '../package.json'
 
@@ -25,6 +25,7 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const cookieStore = await cookies()
   const userId = cookieStore.get('userId')?.value
+  const prisma = getPrisma()
   let user = userId ? await prisma.user.findUnique({ 
     where: { id: userId }, 
     select: { 
@@ -52,7 +53,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const themeCookie = cookieStore.get('theme')?.value || ''
   const t = (user?.settings?.theme || themeCookie || '').toLowerCase()
   const theme: 'dark' | 'bright' = (t === 'bright' || t === 'light') ? 'bright' : 'dark'
-  const version = (pkg as any)?.version || '0.0.0'
+  const version = (pkg as unknown as { version?: string }).version ?? '0.0.0'
 
   
   return (

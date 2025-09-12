@@ -124,7 +124,7 @@ function SparkArea({ data, color, yDomain, height = 80 }: { data: { date: string
           <XAxis dataKey="date" hide tickFormatter={formatDayLabel} />
           <YAxis hide domain={yDomain} />
           <Tooltip
-            formatter={(v: any) => (v == null ? '—' : v)}
+            formatter={(v: unknown) => (v == null ? '—' : String(v))}
             labelFormatter={(l: string) => formatDayLabel(l)}
           />
           <Area type="monotone" dataKey="value" stroke={color} fill={`url(#${gid})`} connectNulls dot={false} strokeWidth={2} />
@@ -170,7 +170,7 @@ function WeeklyView() {
     if (!canGoNext) return
     const ws = data?.weekStart
     if (ws) {
-      const nextFrom = shiftDays(ws, +7)
+      const _nextFrom = shiftDays(ws, +7)
       // Wenn nextFrom die nächste Woche beschreibt, die Identisch mit "aktuell" wäre, räumen wir auf
       // indem wir wieder auf from=null gehen, damit Server "aktuelle Woche" liefert.
       setFrom(null)
@@ -213,7 +213,7 @@ function WeeklyView() {
         {SYMPTOMS.map((sym) => (
           <div key={sym}>
             <div className="text-xs text-gray-400 mb-1">{sym}</div>
-            <SparkArea data={toSeries(days, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
+            <SparkArea data={toSeries(days, data?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
           </div>
         ))}
         {data.customSymptoms && data.customSymptoms.defs.length > 0 && (
@@ -334,7 +334,7 @@ function PhaseView() {
               <div key={sym}>
                 <div className="text-xs text-gray-400 mb-1">{sym}</div>
                 <SparkArea
-                  data={toSeries(data.series.dates, (data as any)?.series?.symptoms?.[sym] ?? [])}
+                  data={toSeries(data.series.dates, data.series.symptoms[sym] ?? [])}
                   color="#f59e0b"
                   yDomain={[1, 10]}
                 />
@@ -438,7 +438,7 @@ function OverallView() {
             {SYMPTOMS.map((sym) => (
               <div key={sym}>
                 <div className="text-xs text-gray-400 mb-1">{sym}</div>
-                <SparkArea data={toSeries(data.dates, (data as any)?.symptoms?.[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
+                <SparkArea data={toSeries(data.dates, data.symptoms[sym] ?? [])} color="#f59e0b" yDomain={[1, 10]} />
               </div>
             ))}
             {data.customSymptoms && data.customSymptoms.defs.length > 0 && (
