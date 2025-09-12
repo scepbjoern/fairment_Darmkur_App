@@ -3,12 +3,12 @@
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
 ## [1.0.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.0...v1.0.0) (2025-09-12)
-
-## [0.4.2](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.1...v0.4.2) (2025-09-12)
-
-## [0.4.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.0...v0.4.1) (2025-09-12)
-
-## [0.4.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.4.0...v0.4.1) (2025-09-12)
+Main release after
+refactor: use getPrisma() factory instead of direct prisma import
+feat(nav): vereinheitlichte Farben Light/Dark + Hover
+feat(mobile): Links-Submenü collapsible + text-sm
+fix(profile-menu): Outside-Click schließt Menü nicht vor Click-Handlern
+feat(day): Titel „Tagebuch D.M.YYYY“ (ohne führende Nullen)
 
 ## [0.4.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v0.3.0...v0.4.0) (2025-09-12)
 
