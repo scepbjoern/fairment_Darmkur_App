@@ -140,6 +140,9 @@ export default function HeutePage() {
   const [editingText, setEditingText] = useState<string>('')
   const [remarksEditing, setRemarksEditing] = useState(false)
   const [remarksText, setRemarksText] = useState('')
+  // Draft states for symptoms to enable manual save and clear UX feedback on slow connections
+  const [draftSymptoms, setDraftSymptoms] = useState<Record<string, number | undefined>>({})
+  const [draftUserSymptoms, setDraftUserSymptoms] = useState<Record<string, number | undefined>>({})
 
   function startEditNote(n: DayNote) {
     setEditingNoteId(n.id)
@@ -252,6 +255,12 @@ export default function HeutePage() {
     setRemarksText(day?.notes || '')
   }, [day?.id, day?.notes])
 
+  // When day changes, discard any symptom drafts to avoid leaking to a different day
+  useEffect(() => {
+    setDraftSymptoms({})
+    setDraftUserSymptoms({})
+  }, [day?.id])
+
   async function uploadPhotos(noteId: string, files: FileList | File[]) {
     try {
       const formData = new FormData()
@@ -304,34 +313,7 @@ export default function HeutePage() {
     setDay(data.day)
     doneSaving()
   }
-
-  async function updateUserSymptom(userSymptomId: string, score: number) {
-    if (!day) return
-    startSaving()
-    const res = await fetch(`/api/day/${day.id}/user-symptoms`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userSymptomId, score }),
-      credentials: 'same-origin',
-    })
-    const data = await res.json()
-    if (res.ok && data?.day) setDay(data.day)
-    doneSaving()
-  }
-
-  async function updateSymptom(type: string, score: number) {
-    if (!day) return
-    startSaving()
-    const res = await fetch(`/api/day/${day.id}/symptoms`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, score }),
-      credentials: 'same-origin',
-    })
-    const data = await res.json()
-    setDay(data.day)
-    doneSaving()
-  }
+  // Removed unused updateUserSymptom and updateSymptom (replaced by draft-based save)
 
   async function updateStool(bristol: number) {
     if (!day) return
@@ -345,6 +327,70 @@ export default function HeutePage() {
     const data = await res.json()
     setDay(data.day)
     doneSaving()
+  }
+
+  // Draft helpers for Symptome: set locally first, then allow manual save
+  function setDraftSymptom(type: string, score: number) {
+    if (!day) return
+    setDraftSymptoms(prev => {
+      const serverVal = day?.symptoms?.[type]
+      if (serverVal === score) {
+        const { [type]: _omit, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [type]: score }
+    })
+  }
+
+  function setDraftUserSymptom(id: string, score: number) {
+    if (!day) return
+    setDraftUserSymptoms(prev => {
+      const serverVal = (day?.userSymptoms || []).find(u => u.id === id)?.score
+      if (serverVal === score) {
+        const { [id]: _omit, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [id]: score }
+    })
+  }
+
+  const unsavedSymptomCount = useMemo(() => (
+    Object.keys(draftSymptoms).length + Object.keys(draftUserSymptoms).length
+  ), [draftSymptoms, draftUserSymptoms])
+
+  async function saveDraftSymptoms() {
+    if (!day) return
+    const entries = Object.entries(draftSymptoms).filter(([, v]) => typeof v === 'number') as [string, number][]
+    const userEntries = Object.entries(draftUserSymptoms).filter(([, v]) => typeof v === 'number') as [string, number][]
+    if (entries.length === 0 && userEntries.length === 0) return
+    startSaving()
+    try {
+      await Promise.all([
+        ...entries.map(([type, score]) => fetch(`/api/day/${day.id}/symptoms`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type, score }), credentials: 'same-origin',
+        }).then(r => r.json()).catch(() => ({}))),
+        ...userEntries.map(([userSymptomId, score]) => fetch(`/api/day/${day.id}/user-symptoms`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userSymptomId, score }), credentials: 'same-origin',
+        }).then(r => r.json()).catch(() => ({}))),
+      ])
+      // Refresh authoritative day payload once after all updates
+      try {
+        const res = await fetch(`/api/day?date=${date}`, { credentials: 'same-origin' })
+        const data = await res.json()
+        if (data?.day) setDay(data.day)
+      } catch {}
+      setDraftSymptoms({})
+      setDraftUserSymptoms({})
+    } finally {
+      doneSaving()
+    }
+  }
+
+  function discardDraftSymptoms() {
+    setDraftSymptoms({})
+    setDraftUserSymptoms({})
   }
 
   async function toggleHabit(habitId: string, checked: boolean) {
@@ -461,11 +507,27 @@ export default function HeutePage() {
 
           <div className="card p-4 space-y-4">
             <h2 className="font-medium">Symptome</h2>
+            {unsavedSymptomCount > 0 && (
+              <div className="flex items-center justify-between p-2 rounded border border-red-500/60 bg-red-900/20">
+                <div className="text-xs text-red-300">Änderungen nicht gespeichert</div>
+                <div className="flex items-center gap-2">
+                  <button className="pill text-xs" onClick={saveDraftSymptoms}>Speichern</button>
+                  <button className="pill text-xs" onClick={discardDraftSymptoms}>Verwerfen</button>
+                </div>
+              </div>
+            )}
             <div className="space-y-3">
               {symptoms.map(type => (
                 <div key={type} className="space-y-1">
                   <div className="text-sm text-gray-400">{SYMPTOM_LABELS[type]}</div>
-                  <NumberPills min={1} max={10} value={day.symptoms[type]} onChange={n => updateSymptom(type, n)} ariaLabel={SYMPTOM_LABELS[type]} />
+                  <NumberPills
+                    min={1}
+                    max={10}
+                    value={draftSymptoms[type] ?? day.symptoms[type]}
+                    onChange={n => setDraftSymptom(type, n)}
+                    ariaLabel={SYMPTOM_LABELS[type]}
+                    unsaved={draftSymptoms[type] !== undefined}
+                  />
                 </div>
               ))}
             </div>
@@ -475,7 +537,14 @@ export default function HeutePage() {
                 day.userSymptoms.map(us => (
                   <div key={us.id} className="space-y-1">
                     <div className="text-sm text-gray-400">{us.title}</div>
-                    <NumberPills min={1} max={10} value={us.score} onChange={n => updateUserSymptom(us.id, n)} ariaLabel={us.title} />
+                    <NumberPills
+                      min={1}
+                      max={10}
+                      value={draftUserSymptoms[us.id] ?? us.score}
+                      onChange={n => setDraftUserSymptom(us.id, n)}
+                      ariaLabel={us.title}
+                      unsaved={draftUserSymptoms[us.id] !== undefined}
+                    />
                   </div>
                 ))
               ) : (
