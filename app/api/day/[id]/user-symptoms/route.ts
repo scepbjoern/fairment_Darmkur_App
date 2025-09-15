@@ -36,6 +36,41 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   }
 }
 
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params
+  try {
+    const prisma = getPrisma()
+    let userSymptomId: string | null = null
+    try {
+      const body = await req.json().catch(() => ({} as any))
+      if (body && body.userSymptomId) userSymptomId = String(body.userSymptomId)
+    } catch {}
+    if (!userSymptomId) {
+      try {
+        const url = new URL(req.url)
+        const p = url.searchParams.get('userSymptomId')
+        if (p) userSymptomId = String(p)
+      } catch {}
+    }
+    if (!userSymptomId) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
+
+    const day = await prisma.dayEntry.findUnique({ where: { id } })
+    if (!day) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    // Ownership check: ensure the custom symptom belongs to same user
+    const userSym = await (prisma as any).userSymptom.findUnique({ where: { id: userSymptomId } })
+    if (!userSym || userSym.userId !== day.userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    await (prisma as any).userSymptomScore.deleteMany({ where: { dayEntryId: day.id, userSymptomId } })
+
+    const payload = await buildDayPayload(day.id)
+    return NextResponse.json({ day: payload })
+  } catch (err) {
+    console.error('DELETE /api/day/[id]/user-symptoms failed', err)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
+
 async function buildDayPayload(dayId: string) {
   const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id: dayId } })

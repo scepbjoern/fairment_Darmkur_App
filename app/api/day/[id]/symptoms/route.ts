@@ -39,6 +39,35 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   return NextResponse.json({ day: payload })
 }
 
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params
+  const prisma = getPrisma()
+  let type: SymptomType | null = null
+  try {
+    const body = await req.json().catch(() => ({})) as any
+    if (body && body.type) type = String(body.type) as SymptomType
+  } catch {}
+  if (!type) {
+    // allow query param fallback: /api/day/[id]/symptoms?type=STIMMUNG
+    try {
+      const url = new URL(req.url)
+      const t = url.searchParams.get('type')
+      if (t) type = String(t) as SymptomType
+    } catch {}
+  }
+  if (!type || !SymptomTypes.includes(type)) {
+    return NextResponse.json({ error: 'Bad request' }, { status: 400 })
+  }
+
+  const day = await prisma.dayEntry.findUnique({ where: { id } })
+  if (!day) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  await prisma.symptomScore.deleteMany({ where: { dayEntryId: day.id, type } })
+
+  const payload = await buildDayPayload(day.id)
+  return NextResponse.json({ day: payload })
+}
+
 async function buildDayPayload(dayId: string) {
   const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id: dayId } })

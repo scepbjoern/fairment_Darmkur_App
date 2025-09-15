@@ -143,6 +143,8 @@ export default function HeutePage() {
   // Draft states for symptoms to enable manual save and clear UX feedback on slow connections
   const [draftSymptoms, setDraftSymptoms] = useState<Record<string, number | undefined>>({})
   const [draftUserSymptoms, setDraftUserSymptoms] = useState<Record<string, number | undefined>>({})
+  const [clearedSymptoms, setClearedSymptoms] = useState<Set<string>>(new Set())
+  const [clearedUserSymptoms, setClearedUserSymptoms] = useState<Set<string>>(new Set())
 
   function startEditNote(n: DayNote) {
     setEditingNoteId(n.id)
@@ -259,6 +261,8 @@ export default function HeutePage() {
   useEffect(() => {
     setDraftSymptoms({})
     setDraftUserSymptoms({})
+    setClearedSymptoms(new Set())
+    setClearedUserSymptoms(new Set())
   }, [day?.id])
 
   async function uploadPhotos(noteId: string, files: FileList | File[]) {
@@ -332,6 +336,15 @@ export default function HeutePage() {
   // Draft helpers for Symptome: set locally first, then allow manual save
   function setDraftSymptom(type: string, score: number) {
     if (!day) return
+    // selecting a new value removes any clear-intent
+    setClearedSymptoms(prev => {
+      if (prev.has(type)) {
+        const next = new Set(prev)
+        next.delete(type)
+        return next
+      }
+      return prev
+    })
     setDraftSymptoms(prev => {
       const serverVal = day?.symptoms?.[type]
       if (serverVal === score) {
@@ -344,6 +357,14 @@ export default function HeutePage() {
 
   function setDraftUserSymptom(id: string, score: number) {
     if (!day) return
+    setClearedUserSymptoms(prev => {
+      if (prev.has(id)) {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      }
+      return prev
+    })
     setDraftUserSymptoms(prev => {
       const serverVal = (day?.userSymptoms || []).find(u => u.id === id)?.score
       if (serverVal === score) {
@@ -354,15 +375,42 @@ export default function HeutePage() {
     })
   }
 
+  function clearDraftSymptom(type: string) {
+    if (!day) return
+    // remove any draft value and mark as cleared
+    setDraftSymptoms(prev => {
+      if (prev[type] !== undefined) {
+        const { [type]: _omit, ...rest } = prev
+        return rest
+      }
+      return prev
+    })
+    setClearedSymptoms(prev => new Set(prev).add(type))
+  }
+
+  function clearDraftUserSymptom(id: string) {
+    if (!day) return
+    setDraftUserSymptoms(prev => {
+      if (prev[id] !== undefined) {
+        const { [id]: _omit, ...rest } = prev
+        return rest
+      }
+      return prev
+    })
+    setClearedUserSymptoms(prev => new Set(prev).add(id))
+  }
+
   const unsavedSymptomCount = useMemo(() => (
-    Object.keys(draftSymptoms).length + Object.keys(draftUserSymptoms).length
-  ), [draftSymptoms, draftUserSymptoms])
+    Object.keys(draftSymptoms).length + Object.keys(draftUserSymptoms).length + clearedSymptoms.size + clearedUserSymptoms.size
+  ), [draftSymptoms, draftUserSymptoms, clearedSymptoms, clearedUserSymptoms])
 
   async function saveDraftSymptoms() {
     if (!day) return
     const entries = Object.entries(draftSymptoms).filter(([, v]) => typeof v === 'number') as [string, number][]
     const userEntries = Object.entries(draftUserSymptoms).filter(([, v]) => typeof v === 'number') as [string, number][]
-    if (entries.length === 0 && userEntries.length === 0) return
+    const cleared = Array.from(clearedSymptoms)
+    const clearedUser = Array.from(clearedUserSymptoms)
+    if (entries.length === 0 && userEntries.length === 0 && cleared.length === 0 && clearedUser.length === 0) return
     startSaving()
     try {
       await Promise.all([
@@ -374,15 +422,27 @@ export default function HeutePage() {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userSymptomId, score }), credentials: 'same-origin',
         }).then(r => r.json()).catch(() => ({}))),
+        ...cleared.map((type) => fetch(`/api/day/${day.id}/symptoms`, {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type }), credentials: 'same-origin',
+        }).then(r => r.json()).catch(() => ({}))),
+        ...clearedUser.map((userSymptomId) => fetch(`/api/day/${day.id}/user-symptoms`, {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userSymptomId }), credentials: 'same-origin',
+        }).then(r => r.json()).catch(() => ({}))),
       ])
       // Refresh authoritative day payload once after all updates
       try {
         const res = await fetch(`/api/day?date=${date}`, { credentials: 'same-origin' })
         const data = await res.json()
         if (data?.day) setDay(data.day)
+        if (data?.notes) setNotes(data.notes)
+        if (data?.habits) setHabits(data.habits)
       } catch {}
       setDraftSymptoms({})
       setDraftUserSymptoms({})
+      setClearedSymptoms(new Set())
+      setClearedUserSymptoms(new Set())
     } finally {
       doneSaving()
     }
@@ -391,6 +451,8 @@ export default function HeutePage() {
   function discardDraftSymptoms() {
     setDraftSymptoms({})
     setDraftUserSymptoms({})
+    setClearedSymptoms(new Set())
+    setClearedUserSymptoms(new Set())
   }
 
   async function toggleHabit(habitId: string, checked: boolean) {
@@ -505,6 +567,8 @@ export default function HeutePage() {
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
 
+          
+
           <div className="card p-4 space-y-4">
             <h2 className="font-medium">Symptome</h2>
             {unsavedSymptomCount > 0 && (
@@ -523,10 +587,11 @@ export default function HeutePage() {
                   <NumberPills
                     min={1}
                     max={10}
-                    value={draftSymptoms[type] ?? day.symptoms[type]}
+                    value={clearedSymptoms.has(type) ? undefined : (draftSymptoms[type] ?? day.symptoms[type])}
                     onChange={n => setDraftSymptom(type, n)}
+                    onClear={() => clearDraftSymptom(type)}
                     ariaLabel={SYMPTOM_LABELS[type]}
-                    unsaved={draftSymptoms[type] !== undefined}
+                    unsaved={draftSymptoms[type] !== undefined || clearedSymptoms.has(type)}
                   />
                 </div>
               ))}
@@ -540,10 +605,11 @@ export default function HeutePage() {
                     <NumberPills
                       min={1}
                       max={10}
-                      value={draftUserSymptoms[us.id] ?? us.score}
+                      value={clearedUserSymptoms.has(us.id) ? undefined : (draftUserSymptoms[us.id] ?? us.score)}
                       onChange={n => setDraftUserSymptom(us.id, n)}
+                      onClear={() => clearDraftUserSymptom(us.id)}
                       ariaLabel={us.title}
-                      unsaved={draftUserSymptoms[us.id] !== undefined}
+                      unsaved={draftUserSymptoms[us.id] !== undefined || clearedUserSymptoms.has(us.id)}
                     />
                   </div>
                 ))
@@ -556,7 +622,6 @@ export default function HeutePage() {
           <div className="card p-4 space-y-3">
             <h2 className="font-medium">Stuhl (Bristol 1–7)</h2>
             <div className="text-xs text-gray-400">
-              Die Bedeutung der Zahlen wird in diesem Ausschnitt aus dem Darmkur‑Guide erklärt:
               {' '}
               <a
                 href="/docs/Darmkur-Guide_Auszug.pdf"
@@ -701,6 +766,57 @@ export default function HeutePage() {
               </div>
             </div>
             <SaveIndicator saving={saving} savedAt={savedAt} />
+          </div>
+
+          <div className="card p-4 space-y-3">
+            <h2 className="font-medium">Tag zurücksetzen</h2>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-400">Alle Angaben (Symptome, Stuhl, Gewohnheiten, Notizen) für diesen Tag löschen.</div>
+              <button
+                className="pill bg-red-600 text-white border-transparent hover:bg-red-500"
+                onClick={async () => {
+                  if (!day) return
+                  const ok = window.confirm('Wirklich alle Angaben für diesen Tag löschen? Dies kann nicht rückgängig gemacht werden.')
+                  if (!ok) return
+                  startSaving()
+                  try {
+                    const res = await fetch(`/api/day/${day.id}`, { method: 'DELETE', credentials: 'same-origin' })
+                    await res.json().catch(() => ({}))
+                    // Reload full day payload to reflect authoritative state
+                    try {
+                      const r = await fetch(`/api/day?date=${date}`, { credentials: 'same-origin' })
+                      if (r.ok) {
+                        const dd = await r.json()
+                        setDay(dd.day)
+                        setHabits(dd.habits || [])
+                        setNotes(dd.notes || [])
+                      }
+                    } catch {}
+                    // Refresh calendar markers for current month
+                    try {
+                      const [y, m] = date.split('-')
+                      const ym = `${y}-${m}`
+                      const c = await fetch(`/api/calendar?month=${ym}`, { credentials: 'same-origin' })
+                      if (c.ok) {
+                        const cj = await c.json()
+                        setDaysWithData(new Set<string>(cj?.days ?? []))
+                        setReflectionDays(new Set<string>(cj?.reflectionDays ?? []))
+                      }
+                    } catch {}
+                    // Clear any drafts
+                    setDraftSymptoms({})
+                    setDraftUserSymptoms({})
+                    setClearedSymptoms(new Set())
+                    setClearedUserSymptoms(new Set())
+                  } finally {
+                    doneSaving()
+                  }
+                }}
+              >
+                Alle Angaben für diesen Tag löschen
+              </button>
+            </div>
+            <div className="text-xs text-red-300">Achtung: Diese Aktion löscht alle erfassten Angaben des Tages.</div>
           </div>
         </>
       )}

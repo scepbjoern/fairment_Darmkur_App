@@ -35,6 +35,33 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   return NextResponse.json({ day: payload })
 }
 
+export async function DELETE(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params
+  const prisma = getPrisma()
+  const day = await prisma.dayEntry.findUnique({ where: { id } })
+  if (!day) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Delete notes and their photos
+  const notes = await prisma.dayNote.findMany({ where: { dayEntryId: day.id }, select: { id: true } })
+  const noteIds = notes.map(n => n.id)
+  if (noteIds.length > 0) {
+    await prisma.dayNotePhoto.deleteMany({ where: { dayNoteId: { in: noteIds } } })
+  }
+  await prisma.dayNote.deleteMany({ where: { dayEntryId: day.id } })
+
+  // Delete habit ticks, symptoms, stool, custom user symptom scores
+  await prisma.habitTick.deleteMany({ where: { dayEntryId: day.id } })
+  await prisma.symptomScore.deleteMany({ where: { dayEntryId: day.id } })
+  await prisma.stoolScore.deleteMany({ where: { dayEntryId: day.id } })
+  await (prisma as any).userSymptomScore.deleteMany({ where: { dayEntryId: day.id } })
+
+  // Reset free-text notes
+  await prisma.dayEntry.update({ where: { id: day.id }, data: { notes: null } })
+
+  const payload = await buildDayPayload(day.id)
+  return NextResponse.json({ day: payload })
+}
+
 async function buildDayPayload(dayId: string) {
   const prisma = getPrisma()
   const day = await prisma.dayEntry.findUnique({ where: { id: dayId } })

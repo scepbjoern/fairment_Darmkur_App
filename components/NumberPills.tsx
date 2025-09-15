@@ -9,6 +9,7 @@ export function NumberPills({
   size = 'md',
   ariaLabel,
   unsaved = false,
+  onClear,
 }: {
   min: number
   max: number
@@ -17,6 +18,7 @@ export function NumberPills({
   size?: 'sm' | 'md' | 'lg'
   ariaLabel?: string
   unsaved?: boolean
+  onClear?: () => void
 }) {
   // Use fixed square dimensions and rounded-full to achieve perfect circles
   const sizeClass =
@@ -31,7 +33,13 @@ export function NumberPills({
           // Avoid the shared .pill padding (px/py) to prevent ellipses; construct styles directly
           className={`rounded-full bg-pill text-gray-200 inline-flex items-center justify-center border border-slate-700 ${sizeClass} ${value === n ? `${unsaved ? 'bg-primary/80' : 'bg-primary'} text-black ${unsaved ? 'border-blue-400' : 'border-transparent'}` : ''}`}
           aria-label={ariaLabel ? `${ariaLabel} ${n}` : undefined}
-          onClick={() => onChange(n)}
+          onClick={() => {
+            if (value === n) {
+              onClear?.()
+            } else {
+              onChange(n)
+            }
+          }}
         >
           {n}
         </button>
