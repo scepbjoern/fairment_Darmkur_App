@@ -38,9 +38,36 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
   if (typeof body.gratitude === 'string') data.gratitude = body.gratitude
   if (typeof body.vows === 'string') data.vows = body.vows
   if (typeof body.remarks === 'string') data.remarks = body.remarks
+  // Optional: weightKg (Float?). Accept string with comma/dot, number, or null to clear
+  if (Object.prototype.hasOwnProperty.call(body, 'weightKg')) {
+    const rawW = body.weightKg
+    const parsed = (() => {
+      if (rawW === null) return null
+      if (typeof rawW === 'number' && isFinite(rawW)) return Math.round(rawW * 10) / 10
+      if (typeof rawW === 'string') {
+        const s = rawW.trim()
+        if (s === '') return null
+        const n = Number(s.replace(',', '.'))
+        if (!isNaN(n) && isFinite(n)) return Math.round(n * 10) / 10
+      }
+      return undefined
+    })()
+    if (parsed !== undefined) data.weightKg = parsed
+  }
 
-  const updated = await (prisma as any).reflection.update({ where: { id }, data })
-  return NextResponse.json({ ok: true, reflection: { id: updated.id } })
+  try {
+    const updated = await (prisma as any).reflection.update({ where: { id }, data })
+    return NextResponse.json({ ok: true, reflection: { id: updated.id } })
+  } catch (err: any) {
+    // Fallback if Prisma client is not yet generated with weightKg
+    if (Object.prototype.hasOwnProperty.call(data, 'weightKg')) {
+      const fallback: any = { ...data }
+      delete fallback.weightKg
+      const updated = await (prisma as any).reflection.update({ where: { id }, data: fallback })
+      return NextResponse.json({ ok: true, reflection: { id: updated.id } })
+    }
+    throw err
+  }
 }
 
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {

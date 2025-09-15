@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
       gratitude: r.gratitude ?? '',
       vows: r.vows ?? '',
       remarks: r.remarks ?? '',
+      weightKg: typeof r.weightKg === 'number' ? r.weightKg : undefined,
       photos: ((r.photos || []) as any[]).map((p: any) => ({ id: p.id, url: p.url })),
     }))
     return NextResponse.json({ reflections })
@@ -49,10 +50,40 @@ export async function POST(req: NextRequest) {
     const gratitude: string | undefined = body?.gratitude || undefined
     const vows: string | undefined = body?.vows || undefined
     const remarks: string | undefined = body?.remarks || undefined
+    // Optional weight in kg (one decimal). Accept string with comma or dot.
+    const rawW = body?.weightKg
+    const parsedWeight = (() => {
+      if (rawW === null) return null
+      if (typeof rawW === 'number' && isFinite(rawW)) return Math.round(rawW * 10) / 10
+      if (typeof rawW === 'string') {
+        const s = rawW.trim()
+        if (s === '') return null
+        const n = Number(s.replace(',', '.'))
+        if (!isNaN(n) && isFinite(n)) return Math.round(n * 10) / 10
+      }
+      return undefined
+    })()
 
-    const created = await (prisma as any).reflection.create({
-      data: { userId: user.id, kind, changed, gratitude, vows, remarks },
-    })
+    const data: any = { userId: user.id, kind, changed, gratitude, vows, remarks }
+    if (parsedWeight !== undefined) data.weightKg = parsedWeight // undefined => not provided; null => explicit clear (unused for POST)
+
+    let created: any
+    try {
+      created = await (prisma as any).reflection.create({ data })
+    } catch (err: any) {
+      // Fallback if Prisma client is not yet generated with weightKg
+      if (data.weightKg !== undefined) {
+        try {
+          const fallback = { ...data }
+          delete (fallback as any).weightKg
+          created = await (prisma as any).reflection.create({ data: fallback })
+        } catch (err2) {
+          throw err2
+        }
+      } else {
+        throw err
+      }
+    }
 
     return NextResponse.json({ ok: true, reflection: { id: created.id } })
   } catch (err) {

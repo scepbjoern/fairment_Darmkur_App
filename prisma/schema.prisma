@@ -158,6 +158,7 @@ model Reflection {
   gratitude String?
   vows      String?
   remarks   String?
+  weightKg  Float?
   photos    ReflectionPhoto[]
 
   @@index([userId, createdAt])

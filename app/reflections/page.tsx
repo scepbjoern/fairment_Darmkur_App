@@ -13,6 +13,7 @@ type Reflection = {
   gratitude: string
   vows: string
   remarks: string
+  weightKg?: number
   photos: { id: string; url: string }[]
 }
 
@@ -22,12 +23,14 @@ export default function ReflectionsPage() {
   const [gratitude, setGratitude] = useState('')
   const [vows, setVows] = useState('')
   const [remarks, setRemarks] = useState('')
+  const [weightKg, setWeightKg] = useState('')
   const [list, setList] = useState<Reflection[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [eChanged, setEChanged] = useState('')
   const [eGratitude, setEGratitude] = useState('')
   const [eVows, setEVows] = useState('')
   const [eRemarks, setERemarks] = useState('')
+  const [eWeightKg, setEWeightKg] = useState('')
 
   async function load() {
     const res = await fetch('/api/reflections', { credentials: 'same-origin' })
@@ -42,6 +45,11 @@ export default function ReflectionsPage() {
     setEGratitude(r.gratitude || '')
     setEVows(r.vows || '')
     setERemarks(r.remarks || '')
+    setEWeightKg(
+      typeof r.weightKg === 'number'
+        ? r.weightKg.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+        : ''
+    )
   }
 
   function cancelEdit() {
@@ -50,6 +58,7 @@ export default function ReflectionsPage() {
     setEGratitude('')
     setEVows('')
     setERemarks('')
+    setEWeightKg('')
   }
 
   async function saveEdit() {
@@ -57,7 +66,7 @@ export default function ReflectionsPage() {
     const res = await fetch(`/api/reflections/${editingId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ changed: eChanged, gratitude: eGratitude, vows: eVows, remarks: eRemarks }),
+      body: JSON.stringify({ changed: eChanged, gratitude: eGratitude, vows: eVows, remarks: eRemarks, weightKg: eWeightKg }),
       credentials: 'same-origin',
     })
     if (res.ok) {
@@ -78,14 +87,14 @@ export default function ReflectionsPage() {
   useEffect(() => { load() }, [])
 
   async function addReflection() {
-    const body = { kind, changed, gratitude, vows, remarks }
+    const body = { kind, changed, gratitude, vows, remarks, weightKg }
     const res = await fetch('/api/reflections', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body), credentials: 'same-origin'
     })
     const data = await res.json()
     if (data?.ok) {
-      setChanged(''); setGratitude(''); setVows(''); setRemarks('')
+      setChanged(''); setGratitude(''); setVows(''); setRemarks(''); setWeightKg('')
       await load()
     }
   }
@@ -155,9 +164,23 @@ export default function ReflectionsPage() {
             </div>
             <textarea value={remarks} onChange={e => setRemarks(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
           </div>
+          <div>
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <span>Körpergewicht (kg) — optional (Format 0,0)</span>
+            </div>
+            <input
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9.,]*"
+              value={weightKg}
+              onChange={e => setWeightKg(e.target.value)}
+              className="w-full bg-background border border-slate-700 rounded p-2"
+              placeholder="z. B. 72,5"
+            />
+          </div>
         </div>
         <div>
-          <button className="pill" onClick={addReflection} disabled={!changed && !gratitude && !vows && !remarks}>Speichern</button>
+          <button className="pill" onClick={addReflection} disabled={!changed && !gratitude && !vows && !remarks && !weightKg.trim()}>Speichern</button>
         </div>
       </div>
 
@@ -215,6 +238,20 @@ export default function ReflectionsPage() {
                       </div>
                       <textarea value={eRemarks} onChange={e => setERemarks(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
                     </div>
+                    <div>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <span>Körpergewicht (kg) — optional (Format 0,0)</span>
+                      </div>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9.,]*"
+                        value={eWeightKg}
+                        onChange={e => setEWeightKg(e.target.value)}
+                        className="w-full bg-background border border-slate-700 rounded p-2"
+                        placeholder="z. B. 72,5"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="mt-2 grid gap-2 text-sm">
@@ -222,6 +259,12 @@ export default function ReflectionsPage() {
                     {r.gratitude && <div><div className="text-gray-400 text-xs">Wofür bin ich dankbar?</div><div className="whitespace-pre-wrap">{r.gratitude}</div></div>}
                     {r.vows && <div><div className="text-gray-400 text-xs">Vorsätze</div><div className="whitespace-pre-wrap">{r.vows}</div></div>}
                     {r.remarks && <div><div className="text-gray-400 text-xs">Sonstige Bemerkungen</div><div className="whitespace-pre-wrap">{r.remarks}</div></div>}
+                    {typeof r.weightKg === 'number' && (
+                      <div>
+                        <div className="text-gray-400 text-xs">Körpergewicht</div>
+                        <div>{r.weightKg.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg</div>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="mt-2">
