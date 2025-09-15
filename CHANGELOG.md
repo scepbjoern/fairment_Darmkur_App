@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.1.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.0.1...v1.1.0) (2025-09-15)
+
+
+### Features
+
+* add DELETE endpoints and clear functionality for day entries and symptoms ([365f16d](https://github.com/scepbjoern/fairment_Darmkur_App/commit/365f16d2ebf6593fe0d93d69fa82ee75be43a27a))
+* add draft state and manual save for symptom tracking ([2bf0d66](https://github.com/scepbjoern/fairment_Darmkur_App/commit/2bf0d6605c98e69da1d61169986af0860bc08c1c))
+* add optional weight tracking to reflections with decimal precision ([887c814](https://github.com/scepbjoern/fairment_Darmkur_App/commit/887c8143faa6e9b67b63751990b489901e1b1a95))
+
 ## [1.0.1](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.0.0...v1.0.1) (2025-09-12)
 
 
