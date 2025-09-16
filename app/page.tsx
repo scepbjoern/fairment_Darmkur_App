@@ -5,6 +5,8 @@ import { HabitChips } from '@/components/HabitChips'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
 import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
+import { SaveBar } from '@/components/SaveBar'
+import { Toasts, useToasts } from '@/components/Toast'
 
 const SYMPTOM_LABELS: Record<string, string> = {
   BESCHWERDEFREIHEIT: 'Beschwerdefreiheit',
@@ -140,6 +142,7 @@ export default function HeutePage() {
   const [editingText, setEditingText] = useState<string>('')
   const [remarksEditing, setRemarksEditing] = useState(false)
   const [remarksText, setRemarksText] = useState('')
+  const { toasts, push, dismiss } = useToasts()
   // Draft states for symptoms to enable manual save and clear UX feedback on slow connections
   const [draftSymptoms, setDraftSymptoms] = useState<Record<string, number | undefined>>({})
   const [draftUserSymptoms, setDraftUserSymptoms] = useState<Record<string, number | undefined>>({})
@@ -404,6 +407,14 @@ export default function HeutePage() {
     Object.keys(draftSymptoms).length + Object.keys(draftUserSymptoms).length + clearedSymptoms.size + clearedUserSymptoms.size
   ), [draftSymptoms, draftUserSymptoms, clearedSymptoms, clearedUserSymptoms])
 
+  const remarksDirty = useMemo(() => (
+    remarksEditing && (remarksText !== (day?.notes || ''))
+  ), [remarksEditing, remarksText, day?.notes])
+
+  const combinedDirtyCount = useMemo(() => (
+    unsavedSymptomCount + (remarksDirty ? 1 : 0)
+  ), [unsavedSymptomCount, remarksDirty])
+
   async function saveDraftSymptoms() {
     if (!day) return
     const entries = Object.entries(draftSymptoms).filter(([, v]) => typeof v === 'number') as [string, number][]
@@ -443,6 +454,7 @@ export default function HeutePage() {
       setDraftUserSymptoms({})
       setClearedSymptoms(new Set())
       setClearedUserSymptoms(new Set())
+      push('Symptome gespeichert ✓', 'success')
     } finally {
       doneSaving()
     }
@@ -453,6 +465,35 @@ export default function HeutePage() {
     setDraftUserSymptoms({})
     setClearedSymptoms(new Set())
     setClearedUserSymptoms(new Set())
+    push('Änderungen verworfen', 'info')
+  }
+
+  async function saveRemarks() {
+    if (!day) return
+    await updateDayMeta({ notes: remarksText })
+    setRemarksEditing(false)
+    push('Bemerkungen gespeichert ✓', 'success')
+  }
+
+  async function saveAll() {
+    try {
+      if (unsavedSymptomCount > 0) await saveDraftSymptoms()
+      if (remarksDirty) await saveRemarks()
+      if (unsavedSymptomCount === 0 && !remarksDirty) return
+      push('Gespeichert ✓', 'success')
+    } catch (e) {
+      console.error('Save failed', e)
+      push('Speichern fehlgeschlagen', 'error')
+    }
+  }
+
+  function discardAll() {
+    if (unsavedSymptomCount > 0) discardDraftSymptoms()
+    if (remarksDirty) {
+      setRemarksText(day?.notes || '')
+      setRemarksEditing(!!(day?.notes && day.notes.trim()))
+    }
+    if (unsavedSymptomCount > 0 || remarksDirty) push('Änderungen verworfen', 'info')
   }
 
   async function toggleHabit(habitId: string, checked: boolean) {
@@ -467,12 +508,6 @@ export default function HeutePage() {
     const data = await res.json()
     setDay(data.day)
     doneSaving()
-  }
-
-  async function saveRemarks() {
-    if (!day) return
-    await updateDayMeta({ notes: remarksText })
-    setRemarksEditing(false)
   }
 
   async function clearRemarks() {
@@ -572,19 +607,8 @@ export default function HeutePage() {
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
 
-          
-
           <div className="card p-4 space-y-4">
             <h2 className="font-medium">Symptome</h2>
-            {unsavedSymptomCount > 0 && (
-              <div className="flex items-center justify-between p-2 rounded border border-red-500/60 bg-red-900/20">
-                <div className="text-xs text-red-300">Änderungen nicht gespeichert</div>
-                <div className="flex items-center gap-2">
-                  <button className="pill text-xs" onClick={saveDraftSymptoms}>Speichern</button>
-                  <button className="pill text-xs" onClick={discardDraftSymptoms}>Verwerfen</button>
-                </div>
-              </div>
-            )}
             <div className="space-y-3">
               {symptoms.map(type => (
                 <div key={type} className="space-y-1">
@@ -629,15 +653,6 @@ export default function HeutePage() {
                 <div className="text-sm text-gray-500">Noch keine eigenen Symptome. Lege welche in den Einstellungen an.</div>
               )}
             </div>
-            {unsavedSymptomCount > 0 && (
-              <div className="flex items-center justify-between p-2 rounded border border-red-500/60 bg-red-900/20">
-                <div className="text-xs text-red-300">Änderungen nicht gespeichert</div>
-                <div className="flex items-center gap-2">
-                  <button className="pill text-xs" onClick={saveDraftSymptoms}>Speichern</button>
-                  <button className="pill text-xs" onClick={discardDraftSymptoms}>Verwerfen</button>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="card p-4 space-y-3">
@@ -679,7 +694,6 @@ export default function HeutePage() {
                     className="text-gray-300 hover:text-gray-100"
                     compact
                   />
-                  <button className="pill" onClick={saveRemarks}>Speichern</button>
                   {(day?.notes && day.notes.trim()) ? (
                     <button className="pill" onClick={clearRemarks}>Löschen</button>
                   ) : null}
@@ -870,6 +884,14 @@ export default function HeutePage() {
           })()}
         </div>
       )}
+      <SaveBar
+        visible={combinedDirtyCount > 0}
+        saving={saving}
+        dirtyCount={combinedDirtyCount}
+        onSave={saveAll}
+        onDiscard={discardAll}
+      />
+      <Toasts toasts={toasts} dismiss={dismiss} />
     </div>
   )
 }

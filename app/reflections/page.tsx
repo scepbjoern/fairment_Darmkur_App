@@ -1,7 +1,10 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
+import { SaveBar } from '@/components/SaveBar'
+import { Toasts, useToasts } from '@/components/Toast'
+import { useSaveIndicator } from '@/components/SaveIndicator'
 
 type ReflectionKind = 'WEEK' | 'MONTH'
 
@@ -31,6 +34,8 @@ export default function ReflectionsPage() {
   const [eVows, setEVows] = useState('')
   const [eRemarks, setERemarks] = useState('')
   const [eWeightKg, setEWeightKg] = useState('')
+  const { saving, startSaving, doneSaving } = useSaveIndicator()
+  const { toasts, push, dismiss } = useToasts()
 
   async function load() {
     const res = await fetch('/api/reflections', { credentials: 'same-origin' })
@@ -63,15 +68,23 @@ export default function ReflectionsPage() {
 
   async function saveEdit() {
     if (!editingId) return
-    const res = await fetch(`/api/reflections/${editingId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ changed: eChanged, gratitude: eGratitude, vows: eVows, remarks: eRemarks, weightKg: eWeightKg }),
-      credentials: 'same-origin',
-    })
-    if (res.ok) {
-      await load()
-      cancelEdit()
+    startSaving()
+    try {
+      const res = await fetch(`/api/reflections/${editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ changed: eChanged, gratitude: eGratitude, vows: eVows, remarks: eRemarks, weightKg: eWeightKg }),
+        credentials: 'same-origin',
+      })
+      if (res.ok) {
+        await load()
+        cancelEdit()
+        push('Reflexion gespeichert ✓', 'success')
+      } else {
+        push('Speichern fehlgeschlagen', 'error')
+      }
+    } finally {
+      doneSaving()
     }
   }
 
@@ -88,15 +101,59 @@ export default function ReflectionsPage() {
 
   async function addReflection() {
     const body = { kind, changed, gratitude, vows, remarks, weightKg }
-    const res = await fetch('/api/reflections', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body), credentials: 'same-origin'
-    })
-    const data = await res.json()
-    if (data?.ok) {
-      setChanged(''); setGratitude(''); setVows(''); setRemarks(''); setWeightKg('')
-      await load()
+    startSaving()
+    try {
+      const res = await fetch('/api/reflections', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body), credentials: 'same-origin'
+      })
+      const data = await res.json()
+      if (data?.ok) {
+        setChanged(''); setGratitude(''); setVows(''); setRemarks(''); setWeightKg('')
+        await load()
+        push('Reflexion hinzugefügt ✓', 'success')
+      } else {
+        push('Speichern fehlgeschlagen', 'error')
+      }
+    } finally {
+      doneSaving()
     }
+  }
+
+  const creationDirty = useMemo(() => !!(changed || gratitude || vows || remarks || (weightKg && weightKg.trim())), [changed, gratitude, vows, remarks, weightKg])
+  const editingDirty = useMemo(() => {
+    if (!editingId) return false
+    const cur = list.find(r => r.id === editingId)
+    if (!cur) return false
+    const originalWeight = typeof cur.weightKg === 'number' ? cur.weightKg.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : ''
+    return (
+      eChanged !== (cur.changed || '') ||
+      eGratitude !== (cur.gratitude || '') ||
+      eVows !== (cur.vows || '') ||
+      eRemarks !== (cur.remarks || '') ||
+      eWeightKg !== originalWeight
+    )
+  }, [editingId, list, eChanged, eGratitude, eVows, eRemarks, eWeightKg])
+  const combinedDirtyCount = useMemo(() => (creationDirty ? 1 : 0) + (editingDirty ? 1 : 0), [creationDirty, editingDirty])
+
+  async function saveAll() {
+    try {
+      if (editingDirty) await saveEdit()
+      if (creationDirty) await addReflection()
+      if (!editingDirty && !creationDirty) return
+      push('Gespeichert ✓', 'success')
+    } catch (e) {
+      console.error('Reflections save failed', e)
+      push('Speichern fehlgeschlagen', 'error')
+    }
+  }
+
+  function discardAll() {
+    if (editingId) cancelEdit()
+    if (creationDirty) {
+      setChanged(''); setGratitude(''); setVows(''); setRemarks(''); setWeightKg('')
+    }
+    if (editingId || creationDirty) push('Änderungen verworfen', 'info')
   }
 
   async function uploadPhotos(reflectionId: string, files: FileList | File[]) {
@@ -134,7 +191,15 @@ export default function ReflectionsPage() {
               <option value="MONTH">Monatsreflexion</option>
             </select>
           </label>
-        </div>
+          <SaveBar
+        visible={combinedDirtyCount > 0}
+        saving={saving}
+        dirtyCount={combinedDirtyCount}
+        onSave={saveAll}
+        onDiscard={discardAll}
+      />
+      <Toasts toasts={toasts} dismiss={dismiss} />
+    </div>
         <div className="grid gap-3">
           <div>
             <div className="flex items-center justify-between text-xs text-gray-400">
@@ -179,9 +244,7 @@ export default function ReflectionsPage() {
             />
           </div>
         </div>
-        <div>
-          <button className="pill" onClick={addReflection} disabled={!changed && !gratitude && !vows && !remarks && !weightKg.trim()}>Speichern</button>
-        </div>
+        {/* Save handled by sticky SaveBar */}
       </div>
 
       <div className="space-y-3">
@@ -196,10 +259,7 @@ export default function ReflectionsPage() {
                   <div className="flex items-center gap-2">
                     <span>{new Date(r.createdAtIso).toLocaleString()}</span>
                     {editingId === r.id ? (
-                      <>
-                        <button className="pill" onClick={saveEdit}>Speichern</button>
-                        <button className="pill" onClick={cancelEdit}>Abbrechen</button>
-                      </>
+                      <button className="pill" onClick={cancelEdit}>Abbrechen</button>
                     ) : (
                       <>
                         <button title="Bearbeiten" onClick={() => startEdit(r)}>✏️</button>
