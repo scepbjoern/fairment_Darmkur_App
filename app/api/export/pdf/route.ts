@@ -200,6 +200,9 @@ export async function GET(req: NextRequest) {
       y -= 20
     }
 
+    const collator = new Intl.Collator('de-DE', { sensitivity: 'base' })
+    const customDefsSorted = (customDefs as any[]).slice().sort((a: any, b: any) => collator.compare(a.title, b.title))
+
     for (const de of dayEntries) {
       ensureSpace(100)
       const dateLabel = `${toYmd(de.date)}  (Phase ${de.phase.replace('PHASE_', '')}, Pflege ${de.careCategory})`
@@ -225,9 +228,9 @@ export async function GET(req: NextRequest) {
       drawParagraph('Symptome', symps)
 
       // Custom user-defined symptoms paragraph
-      if ((customDefs as any[]).length > 0) {
+      if ((customDefsSorted as any[]).length > 0) {
         const m = customByDay.get(de.id)
-        const customLine = (customDefs as any[]).map((d: any) => `${d.title}: ${m?.get(d.id) ?? '—'}`).join(', ')
+        const customLine = (customDefsSorted as any[]).map((d: any) => `${d.title}: ${m?.get(d.id) ?? '—'}`).join(', ')
         drawParagraph('Eigene Symptome', customLine)
       }
 

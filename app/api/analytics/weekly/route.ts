@@ -188,6 +188,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const collator = new Intl.Collator('de-DE', { sensitivity: 'base' })
+    const sortedDefs = (customDefs as any[]).slice().sort((a: any, b: any) => collator.compare(a.title, b.title))
     const payload = {
       weekStart: toYmd(days[0]),
       days: keys,
@@ -196,8 +198,8 @@ export async function GET(req: NextRequest) {
       stool,
       habitFulfillment,
       customSymptoms: {
-        defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
-        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, keys.map((k: string) => customById[d.id]?.get(k) ?? null)])),
+        defs: sortedDefs.map((d: any) => ({ id: d.id, title: d.title })),
+        series: Object.fromEntries(sortedDefs.map((d: any) => [d.id, keys.map((k: string) => customById[d.id]?.get(k) ?? null)])),
       },
     }
 

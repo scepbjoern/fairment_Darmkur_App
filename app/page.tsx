@@ -28,7 +28,7 @@ type Day = {
   userSymptoms?: { id: string; title: string; score?: number }[]
 }
 
-type Habit = { id: string; title: string }
+type Habit = { id: string; title: string; userId?: string | null }
 
 type DayNote = {
   id: string
@@ -515,6 +515,11 @@ export default function HeutePage() {
   }
 
   const symptoms = useMemo(() => Object.keys(SYMPTOM_LABELS), [])
+  const collator = useMemo(() => new Intl.Collator('de-DE', { sensitivity: 'base' }), [])
+  const sortedUserSymptoms = useMemo(() => {
+    const arr = day?.userSymptoms ? [...day.userSymptoms] : []
+    return arr.sort((a, b) => collator.compare(a.title, b.title))
+  }, [day?.userSymptoms, collator])
 
   return (
     <div className="space-y-6">
@@ -596,10 +601,17 @@ export default function HeutePage() {
                 </div>
               ))}
             </div>
+            {/* Divider and heading for user-defined symptoms */}
+            {(day.userSymptoms && day.userSymptoms.length > 0) && (
+              <>
+                <div className="border-t border-slate-700/60 my-1" />
+                <div className="text-sm text-gray-400">Eigene Symptome</div>
+              </>
+            )}
             {/* Custom user-defined symptoms */}
             <div className="space-y-3">
-              {(day.userSymptoms && day.userSymptoms.length > 0) ? (
-                day.userSymptoms.map(us => (
+              {(sortedUserSymptoms && sortedUserSymptoms.length > 0) ? (
+                sortedUserSymptoms.map(us => (
                   <div key={us.id} className="space-y-1">
                     <div className="text-sm text-gray-400">{us.title}</div>
                     <NumberPills
@@ -617,6 +629,15 @@ export default function HeutePage() {
                 <div className="text-sm text-gray-500">Noch keine eigenen Symptome. Lege welche in den Einstellungen an.</div>
               )}
             </div>
+            {unsavedSymptomCount > 0 && (
+              <div className="flex items-center justify-between p-2 rounded border border-red-500/60 bg-red-900/20">
+                <div className="text-xs text-red-300">Änderungen nicht gespeichert</div>
+                <div className="flex items-center gap-2">
+                  <button className="pill text-xs" onClick={saveDraftSymptoms}>Speichern</button>
+                  <button className="pill text-xs" onClick={discardDraftSymptoms}>Verwerfen</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card p-4 space-y-3">

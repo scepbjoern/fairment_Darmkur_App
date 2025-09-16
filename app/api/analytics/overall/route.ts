@@ -145,6 +145,8 @@ export async function GET(req: NextRequest) {
       if (m) m.set(key, r.score)
     }
 
+    const collator = new Intl.Collator('de-DE', { sensitivity: 'base' })
+    const sortedDefs = (customDefs as any[]).slice().sort((a: any, b: any) => collator.compare(a.title, b.title))
     const payload = {
       dates,
       wellBeingIndex,
@@ -153,8 +155,8 @@ export async function GET(req: NextRequest) {
       markers,
       symptoms: symptomSeries,
       customSymptoms: {
-        defs: (customDefs as any[]).map((d: any) => ({ id: d.id, title: d.title })),
-        series: Object.fromEntries((customDefs as any[]).map((d: any) => [d.id, dates.map((k: string) => customById[d.id]?.get(k) ?? null)])),
+        defs: sortedDefs.map((d: any) => ({ id: d.id, title: d.title })),
+        series: Object.fromEntries(sortedDefs.map((d: any) => [d.id, dates.map((k: string) => customById[d.id]?.get(k) ?? null)])),
       },
     }
     const res = NextResponse.json(payload)

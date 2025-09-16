@@ -89,6 +89,10 @@ export async function GET(req: NextRequest) {
         : Promise.resolve([] as { dayEntryId: string; userSymptomId: string; score: number }[]),
     ])
 
+    const collator = new Intl.Collator('de-DE', { sensitivity: 'base' })
+    const ownHabitsSorted = (ownHabits as any[]).slice().sort((a: any, b: any) => collator.compare(a.title, b.title)) as { id: string; title: string }[]
+    const customDefsSorted = (customDefs as any[]).slice().sort((a: any, b: any) => collator.compare(a.title, b.title))
+
     const stoolById = new Map<string, number>()
     for (const r of stoolRows) stoolById.set(r.dayEntryId, r.bristol)
 
@@ -96,7 +100,7 @@ export async function GET(req: NextRequest) {
     for (const r of tickRowsAll) doneById.set(r.dayEntryId, (doneById.get(r.dayEntryId) || 0) + 1)
 
     // Build per-day own habit completion map
-    const ownHabitIds = ownHabits.map((h: { id: string; title: string }) => h.id)
+    const ownHabitIds = ownHabitsSorted.map((h: { id: string; title: string }) => h.id)
     const ticksOwn = ownHabitIds.length && dayIds.length
       ? await prisma.habitTick.findMany({
           where: { dayEntryId: { in: dayIds }, habitId: { in: ownHabitIds }, checked: true },
@@ -122,8 +126,8 @@ export async function GET(req: NextRequest) {
       'date', 'phase', 'careCategory', 'wbi',
       'stool_bristol', 'habit_done', 'habits_total', 'habit_ratio',
       ...SYMPTOMS.map(s => `symptom_${s}`),
-      ...(customDefs as any[]).map((d: any) => `customSymptom_${d.title}`),
-      ...ownHabits.map((h: { id: string; title: string }) => `habit_${h.title}`),
+      ...customDefsSorted.map((d: any) => `customSymptom_${d.title}`),
+      ...ownHabitsSorted.map((h: { id: string; title: string }) => `habit_${h.title}`),
     ]
 
     const rows: string[][] = [header]
@@ -154,7 +158,7 @@ export async function GET(req: NextRequest) {
         customByDay.set(r.dayEntryId, m)
       }
       const mCustom = customByDay.get(dayId)
-      for (const d of customDefs as any[]) {
+      for (const d of customDefsSorted as any[]) {
         const cv = mCustom?.get(d.id)
         customRow.push(typeof cv === 'number' ? cv : '')
       }
@@ -175,7 +179,7 @@ export async function GET(req: NextRequest) {
         String(ratio),
         ...symptomsRow.map(v => String(v)),
         ...customRow.map(v => String(v)),
-        ...ownHabits.map((h: { id: string; title: string }) => (ownTickByDay.get(dayId)?.has(h.id) ? '1' : '0')),
+        ...ownHabitsSorted.map((h: { id: string; title: string }) => (ownTickByDay.get(dayId)?.has(h.id) ? '1' : '0')),
       ])
     }
 

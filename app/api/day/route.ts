@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Load habits (standard + user)
-  const habits: { id: string; title: string }[] = await prisma.habit.findMany({
+  const habits: { id: string; title: string; userId: string | null }[] = await prisma.habit.findMany({
     where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] },
     orderBy: { sortIndex: 'asc' },
-    select: { id: true, title: true },
+    select: { id: true, title: true, userId: true },
   })
 
   // Load symptom scores
