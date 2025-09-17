@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.2.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.1.0...v1.2.0) (2025-09-17)
+
+
+### Features
+
+* add icon support for habits and symptoms with default icons and per-user overrides ([df783a2](https://github.com/scepbjoern/fairment_Darmkur_App/commit/df783a2ff3d0c55cb57742664fbf0cd4c5b2ab5b))
+* add icons to page headers and section titles ([e3e5161](https://github.com/scepbjoern/fairment_Darmkur_App/commit/e3e51616d58fdcde921d012b6c3458df1acddc78))
+* add sparklines and yesterday values to symptoms, stool and habits ([eee0243](https://github.com/scepbjoern/fairment_Darmkur_App/commit/eee0243001c3005dca7abb4cfe9e6c3c8c6bd18d))
+* add sparklines, yesterday indicators, and icon customization to help page ([62c41ae](https://github.com/scepbjoern/fairment_Darmkur_App/commit/62c41ae949aadd041da4d820f4b07fca696f6140))
+* add sticky save bar and toast notifications for unsaved changes ([1e169d7](https://github.com/scepbjoern/fairment_Darmkur_App/commit/1e169d7af7c1150188f5d717f2464c9bcfc99a9c))
+* improve save feedback with inline confirmation and green buttons ([22367d1](https://github.com/scepbjoern/fairment_Darmkur_App/commit/22367d1ca7925cdf6dc127442c883e8fd3e9f5d6))
+* **ui:** enhance symptoms and habits organization ([6adbbe7](https://github.com/scepbjoern/fairment_Darmkur_App/commit/6adbbe705155e06977b0e36661415378afda56f5))
+
 ## [1.1.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.0.1...v1.1.0) (2025-09-15)
 
 
