@@ -71,3 +71,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .bright input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(0);
 }
+
+/* Material Symbols font tuning */
+.material-symbols-rounded {
+  font-variation-settings:
+    'FILL' var(--msr-fill, 0),
+    'wght' var(--msr-wght, 400),
+    'GRAD' var(--msr-grad, 0),
+    'opsz' var(--msr-opsz, 24);
+  font-size: 1.1em;
+  line-height: 1;
+  vertical-align: -0.125em;
+}

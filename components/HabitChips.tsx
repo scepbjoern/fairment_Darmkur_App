@@ -1,7 +1,8 @@
 "use client"
 import React from 'react'
+import { Icon } from '@/components/Icon'
 
-export type Habit = { id: string; title: string; userId?: string | null }
+export type Habit = { id: string; title: string; userId?: string | null; icon?: string | null }
 
 export function HabitChips({
   habits,
@@ -27,7 +28,10 @@ export function HabitChips({
               className={`pill ${isOn ? 'active' : ''}`}
               onClick={() => onToggle(h.id, !isOn)}
             >
-              {h.title}
+              <span className="inline-flex items-center gap-1">
+                {h.icon ? <Icon name={h.icon} /> : null}
+                <span>{h.title}</span>
+              </span>
             </button>
           )
         })}
@@ -45,7 +49,10 @@ export function HabitChips({
                   className={`pill ${isOn ? 'active' : ''}`}
                   onClick={() => onToggle(h.id, !isOn)}
                 >
-                  {h.title}
+                  <span className="inline-flex items-center gap-1">
+                    {h.icon ? <Icon name={h.icon} /> : null}
+                    <span>{h.title}</span>
+                  </span>
                 </button>
               )
             })}

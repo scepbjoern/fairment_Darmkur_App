@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
+import { Icon } from '@/components/Icon'
 import { useRouter } from 'next/navigation'
 
 type Me = {
@@ -17,7 +18,7 @@ type Me = {
   } | null
 }
 
-type Habit = { id: string; title: string; userId: string | null }
+type Habit = { id: string; title: string; userId: string | null; icon?: string | null }
 
 type ImageSettings = {
   format: 'webp' | 'png' | 'jpeg'
@@ -27,7 +28,17 @@ type ImageSettings = {
 }
 
 type UserLink = { id: string; name: string; url: string }
-type UserSymptom = { id: string; title: string }
+type UserSymptom = { id: string; title: string; icon?: string | null }
+
+const STD_SYMPTOM_LABELS: Record<string, string> = {
+  BESCHWERDEFREIHEIT: 'Beschwerdefreiheit',
+  ENERGIE: 'Energielevel',
+  STIMMUNG: 'Stimmung',
+  SCHLAF: 'Schlaf',
+  ENTSPANNUNG: 'Zeit für Entspannung',
+  HEISSHUNGERFREIHEIT: 'Heißhungerfreiheit',
+  BEWEGUNG: 'Bewegungslevel',
+}
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -48,6 +59,12 @@ export default function SettingsPage() {
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [userSymptoms, setUserSymptoms] = useState<UserSymptom[]>([])
   const [newUserSymptom, setNewUserSymptom] = useState('')
+  const [newUserSymptomIcon, setNewUserSymptomIcon] = useState('')
+  const [newHabitIcon, setNewHabitIcon] = useState('')
+  const [habitIconDrafts, setHabitIconDrafts] = useState<Record<string, string>>({})
+  const [userSymptomIconDrafts, setUserSymptomIconDrafts] = useState<Record<string, string>>({})
+  const [stdSymptomIcons, setStdSymptomIcons] = useState<Record<string, string | null>>({})
+  const [stdSymptomIconDrafts, setStdSymptomIconDrafts] = useState<Record<string, string>>({})
 
   // Avatar cropper state
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -65,11 +82,12 @@ export default function SettingsPage() {
 
   async function load() {
     try {
-      const [meRes, habitsRes, linksRes, userSymptomsRes] = await Promise.all([
+      const [meRes, habitsRes, linksRes, userSymptomsRes, stdSymIconsRes] = await Promise.all([
         fetch('/api/me', { credentials: 'same-origin' }),
         fetch('/api/habits', { credentials: 'same-origin' }),
         fetch('/api/links', { credentials: 'same-origin' }),
         fetch('/api/user-symptoms', { credentials: 'same-origin' }),
+        fetch('/api/symptom-icons', { credentials: 'same-origin' }),
       ])
       if (meRes.ok) {
         const data = await meRes.json()
@@ -93,6 +111,10 @@ export default function SettingsPage() {
         const data = await userSymptomsRes.json()
         setUserSymptoms(Array.isArray(data.symptoms) ? data.symptoms : [])
       }
+      if (stdSymIconsRes.ok) {
+        const data = await stdSymIconsRes.json()
+        setStdSymptomIcons(data.icons || {})
+      }
       try {
         const raw = localStorage.getItem('imageSettings')
         if (raw) {
@@ -106,6 +128,50 @@ export default function SettingsPage() {
         }
       } catch {}
     } catch {}
+  }
+
+  async function saveHabitIcon(id: string, icon: string) {
+    try {
+      startSaving()
+      const res = await fetch(`/api/habits/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ icon }), credentials: 'same-origin' })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        const r = await fetch('/api/habits', { credentials: 'same-origin' })
+        const dd = await r.json()
+        setHabits(dd.habits || [])
+        setHabitIconDrafts(d => ({ ...d, [id]: '' }))
+      }
+    } finally {
+      doneSaving()
+    }
+  }
+
+  async function saveUserSymptomIcon(id: string, icon: string) {
+    try {
+      startSaving()
+      const res = await fetch(`/api/user-symptoms/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ icon }), credentials: 'same-origin' })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data?.ok) {
+        setUserSymptoms(list => list.map(s => s.id === id ? { ...s, icon: icon || null } : s))
+        setUserSymptomIconDrafts(d => ({ ...d, [id]: '' }))
+      }
+    } finally {
+      doneSaving()
+    }
+  }
+
+  async function saveStdSymptomIcon(type: string, icon: string) {
+    try {
+      startSaving()
+      const res = await fetch('/api/symptom-icons', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, icon }), credentials: 'same-origin' })
+      await res.json().catch(() => ({}))
+      if (res.ok) {
+        setStdSymptomIcons(m => ({ ...m, [type]: icon || null }))
+        setStdSymptomIconDrafts(d => ({ ...d, [type]: '' }))
+      }
+    } finally {
+      doneSaving()
+    }
   }
 
   function openAvatarDialog() {
@@ -224,13 +290,14 @@ export default function SettingsPage() {
     const title = newUserSymptom.trim()
     if (!title) return
     try {
-      const res = await fetch('/api/user-symptoms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }), credentials: 'same-origin' })
+      const res = await fetch('/api/user-symptoms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, icon: newUserSymptomIcon || null }), credentials: 'same-origin' })
       const data = await res.json()
       if (res.ok && data?.ok) {
         const r = await fetch('/api/user-symptoms', { credentials: 'same-origin' })
         const dd = await r.json()
         setUserSymptoms(Array.isArray(dd.symptoms) ? dd.symptoms : [])
         setNewUserSymptom('')
+        setNewUserSymptomIcon('')
       }
     } catch {}
   }
@@ -356,7 +423,7 @@ export default function SettingsPage() {
     const title = newHabit.trim()
     if (!title) return
     try {
-      const res = await fetch('/api/habits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }), credentials: 'same-origin' })
+      const res = await fetch('/api/habits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, icon: newHabitIcon || null }), credentials: 'same-origin' })
       const data = await res.json()
       if (data?.habit) {
         // Refresh from server to ensure full, sorted list and userId present
@@ -368,6 +435,7 @@ export default function SettingsPage() {
           }
         } catch {}
         setNewHabit('')
+        setNewHabitIcon('')
       }
     } catch {}
   }
@@ -413,6 +481,8 @@ export default function SettingsPage() {
             <button type="submit" className="pill">Speichern</button>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
+
+      
         </form>
         {/* Avatar controls */}
         <div className="flex items-center gap-3 pt-2">
@@ -447,21 +517,47 @@ export default function SettingsPage() {
       <div className="card p-4 space-y-3">
         <h2 className="font-medium">Gewohnheiten</h2>
         <div className="max-w-xl space-y-3">
-          <div className="flex items-center gap-2">
-            <input className="flex-1 bg-background border border-slate-700 rounded px-2 py-1 text-sm" placeholder="Neue Gewohnheit…" value={newHabit} onChange={e => setNewHabit(e.target.value)} />
-            <button className="pill" onClick={addHabit} disabled={!newHabit.trim()}>Hinzufügen</button>
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+            <label className="md:col-span-4 text-sm">
+              <div className="text-gray-400">Name</div>
+              <input className="w-full bg-background border border-slate-700 rounded px-2 py-1 text-sm" placeholder="Neue Gewohnheit…" value={newHabit} onChange={e => setNewHabit(e.target.value)} />
+            </label>
+            <label className="text-sm">
+              <div className="text-gray-400">Icon (Emoji oder Symbol)</div>
+              <input className="w-full bg-background border border-slate-700 rounded px-2 py-1 text-sm" placeholder="z. B. 😊 oder fitness_center" value={newHabitIcon} onChange={e => setNewHabitIcon(e.target.value)} />
+            </label>
+            <div>
+              <button className="pill" onClick={addHabit} disabled={!newHabit.trim()}>Hinzufügen</button>
+            </div>
           </div>
           <ul className="space-y-2">
             {habits.map(h => (
-              <li key={h.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <span className="font-medium">{h.title}</span>
-                  <span className="ml-2 text-xs text-gray-400">{h.userId ? 'Eigen' : 'Standard'}</span>
+              <li key={h.id} className="text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6">{h.icon ? <Icon name={h.icon} /> : null}</span>
+                    <span className="font-medium">{h.title}</span>
+                    <span className="ml-2 text-xs text-gray-400">{h.userId ? 'Eigen' : 'Standard'}</span>
+                  </div>
+                  {h.userId && (
+                    <div className="flex items-center gap-2">
+                      <button className="pill" title="Löschen" aria-label="Löschen" onClick={() => deleteHabit(h.id, h.userId)}>
+                        <Icon name="delete" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <button className="pill" disabled={!h.userId} title={h.userId ? 'Löschen' : 'Standard-Gewohnheit kann nicht gelöscht werden'} onClick={() => deleteHabit(h.id, h.userId)}>
-                    Löschen
-                  </button>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-2 mt-2">
+                  <label className="md:col-span-4 text-xs">
+                    <div className="text-gray-400">Icon (Emoji oder Symbol)</div>
+                    <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={habitIconDrafts[h.id] ?? (h.icon ?? '')} onChange={e => setHabitIconDrafts(d => ({ ...d, [h.id]: e.target.value }))} placeholder="z. B. 😊 oder fitness_center" />
+                  </label>
+                  <div className="flex items-end gap-2">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-surface border border-slate-700"><Icon name={(habitIconDrafts[h.id] ?? h.icon) || ''} /></span>
+                    <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveHabitIcon(h.id, habitIconDrafts[h.id] ?? (h.icon ?? ''))}>
+                      <Icon name="save" />
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -516,10 +612,14 @@ export default function SettingsPage() {
 
       <div className="card p-4 space-y-3 max-w-xl">
         <h2 className="font-medium">Eigene Symptome</h2>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
           <label className="md:col-span-4 text-sm">
             <div className="text-gray-400">Name</div>
             <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={newUserSymptom} onChange={e => setNewUserSymptom(e.target.value)} placeholder="z. B. Kopfschmerzen" />
+          </label>
+          <label className="text-sm">
+            <div className="text-gray-400">Icon (Emoji oder Symbol)</div>
+            <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={newUserSymptomIcon} onChange={e => setNewUserSymptomIcon(e.target.value)} placeholder="z. B. 😊 oder mood" />
           </label>
           <div>
             <button className="pill" onClick={addUserSymptom} disabled={!newUserSymptom.trim()}>Hinzufügen</button>
@@ -531,16 +631,52 @@ export default function SettingsPage() {
           ) : (
             userSymptoms.map(s => (
               <li key={s.id} className="flex items-center justify-between text-sm">
-                <div className="truncate">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="inline-flex items-center justify-center w-6">{s.icon ? <Icon name={s.icon} /> : null}</span>
                   <span className="font-medium">{s.title}</span>
                 </div>
-                <button className="pill" onClick={() => deleteUserSymptom(s.id)}>Löschen</button>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs">
+                    <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={userSymptomIconDrafts[s.id] ?? (s.icon ?? '')} onChange={e => setUserSymptomIconDrafts(d => ({ ...d, [s.id]: e.target.value }))} placeholder="Emoji/Symbol" />
+                  </label>
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-surface border border-slate-700"><Icon name={(userSymptomIconDrafts[s.id] ?? s.icon) || ''} /></span>
+                  <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveUserSymptomIcon(s.id, userSymptomIconDrafts[s.id] ?? (s.icon ?? ''))}>
+                    <Icon name="save" />
+                  </button>
+                  <button className="pill" title="Löschen" aria-label="Löschen" onClick={() => deleteUserSymptom(s.id)}>
+                    <Icon name="delete" />
+                  </button>
+                </div>
               </li>
             ))
           )}
         </ul>
       </div>
 
+      <div className="card p-4 space-y-3 max-w-xl">
+        <h2 className="font-medium">Standard-Symptome</h2>
+        <div className="text-sm text-gray-400">Lege Icons/Emojis für die Standard-Symptome fest. Diese gelten nur für dich.</div>
+        <ul className="space-y-2">
+          {Object.entries(STD_SYMPTOM_LABELS).map(([type, label]) => {
+            const current = stdSymptomIconDrafts[type] ?? (stdSymptomIcons[type] ?? '')
+            return (
+              <li key={type} className="flex items-center justify-between text-sm gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-6"><Icon name={current} /></span>
+                  <span className="font-medium">{label}</span>
+                  <span className="text-xs text-gray-500">({type})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={current} onChange={e => setStdSymptomIconDrafts(d => ({ ...d, [type]: e.target.value }))} placeholder="Emoji/Symbol" />
+                  <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveStdSymptomIcon(type, current)}>
+                    <Icon name="save" />
+                  </button>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
       <div className="card p-4 space-y-3 max-w-xl">
         <h2 className="font-medium">Links</h2>
         <div className="text-sm text-gray-400">Hier kannst du eigene Links anlegen, die im Menü unter „Links“ erscheinen.</div>

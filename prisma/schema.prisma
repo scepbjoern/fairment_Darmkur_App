@@ -3,6 +3,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model HabitIcon {
+  id       String  @id @default(uuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id])
+  habitId  String
+  habit    Habit   @relation(fields: [habitId], references: [id])
+  icon     String?
+
+  @@unique([userId, habitId])
+}
+
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
@@ -51,6 +62,8 @@ model User {
   reflections  Reflection[]
   links        UserLink[]
   userSymptoms UserSymptom[]
+  habitIcons   HabitIcon[]
+  symptomIcons SymptomIcon[]
 }
 
 model UserSettings {
@@ -68,9 +81,11 @@ model Habit {
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
   title     String
+  icon      String?
   isActive  Boolean  @default(true)
   sortIndex Int      @default(0)
   ticks     HabitTick[]
+  iconOverrides HabitIcon[]
 }
 
 model DayEntry {
@@ -187,11 +202,22 @@ model UserSymptom {
   userId     String
   user       User     @relation(fields: [userId], references: [id])
   title      String
+  icon       String?
   sortIndex  Int      @default(0)
   isActive   Boolean  @default(true)
   scores     UserSymptomScore[]
 
   @@index([userId, sortIndex])
+}
+
+model SymptomIcon {
+  id      String      @id @default(uuid())
+  userId  String
+  user    User        @relation(fields: [userId], references: [id])
+  type    SymptomType
+  icon    String?
+
+  @@unique([userId, type])
 }
 
 model UserSymptomScore {

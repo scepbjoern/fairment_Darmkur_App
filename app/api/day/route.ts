@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPrisma } from '@/lib/prisma'
+import { DEFAULT_HABIT_ICONS, DEFAULT_SYMPTOM_ICONS } from '@/lib/default-icons'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -47,10 +48,25 @@ export async function GET(req: NextRequest) {
   }
 
   // Load habits (standard + user)
-  const habits: { id: string; title: string; userId: string | null }[] = await prisma.habit.findMany({
+  const _habits = await (prisma as any).habit.findMany({
     where: { isActive: true, OR: [{ userId: null }, { userId: user.id }] },
     orderBy: { sortIndex: 'asc' },
-    select: { id: true, title: true, userId: true },
+    select: { id: true, title: true, userId: true, icon: true },
+  })
+  // Resolve per-user overrides for standard-habit icons
+  const overrides = await (prisma as any).habitIcon.findMany({ where: { userId: user.id, habitId: { in: _habits.map((h: any) => h.id) } } })
+  const iconByHabit = new Map<string, string | null>(overrides.map((o: any) => [o.habitId, o.icon ?? null]))
+  const habits = (_habits as any[]).map((h: any) => {
+    let icon: string | null
+    if (h.userId) {
+      icon = h.icon ?? null
+    } else if (iconByHabit.has(h.id)) {
+      // respect explicit per-user override, including null (cleared)
+      icon = iconByHabit.get(h.id) ?? null
+    } else {
+      icon = DEFAULT_HABIT_ICONS[h.title] ?? null
+    }
+    return { id: h.id, title: h.title, userId: h.userId, icon }
   })
 
   // Load symptom scores
@@ -90,7 +106,13 @@ export async function GET(req: NextRequest) {
   const userScores = await (prisma as any).userSymptomScore.findMany({ where: { dayEntryId: day.id } })
   const scoreById = new Map<string, number>()
   for (const r of userScores) scoreById.set(r.userSymptomId, r.score)
-  const userSymptoms = (userSyms as any[]).map((u: any) => ({ id: u.id, title: u.title, score: scoreById.get(u.id) }))
+  const userSymptoms = (userSyms as any[]).map((u: any) => ({ id: u.id, title: u.title, icon: u.icon ?? null, score: scoreById.get(u.id) }))
+
+  // Load per-user icons for standard symptoms
+  const symIconRows = await (prisma as any).symptomIcon.findMany({ where: { userId: user.id } })
+  // Start with defaults, then apply user overrides (including explicit clearing to null)
+  const symptomIcons: Record<string, string | null> = { ...DEFAULT_SYMPTOM_ICONS }
+  for (const r of symIconRows as any[]) symptomIcons[r.type] = r.icon ?? null
 
   const payload = {
     day: {
@@ -106,6 +128,7 @@ export async function GET(req: NextRequest) {
     },
     habits,
     notes,
+    symptomIcons,
   }
 
   return NextResponse.json(payload)

@@ -7,6 +7,8 @@ import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
 import { SaveBar } from '@/components/SaveBar'
 import { Toasts, useToasts } from '@/components/Toast'
+import { Icon } from '@/components/Icon'
+import { DEFAULT_STOOL_ICON } from '@/lib/default-icons'
 
 const SYMPTOM_LABELS: Record<string, string> = {
   BESCHWERDEFREIHEIT: 'Beschwerdefreiheit',
@@ -27,10 +29,10 @@ type Day = {
   symptoms: Record<string, number | undefined>
   stool?: number
   habitTicks: { habitId: string; checked: boolean }[]
-  userSymptoms?: { id: string; title: string; score?: number }[]
+  userSymptoms?: { id: string; title: string; icon?: string | null; score?: number }[]
 }
 
-type Habit = { id: string; title: string; userId?: string | null }
+type Habit = { id: string; title: string; userId?: string | null; icon?: string | null }
 
 type DayNote = {
   id: string
@@ -127,6 +129,7 @@ function Calendar(props: { date: string; daysWithData: Set<string>; reflectionDa
 export default function HeutePage() {
   const [date, setDate] = useState(() => ymd(new Date()))
   const [day, setDay] = useState<Day | null>(null)
+  const [symptomIcons, setSymptomIcons] = useState<Record<string, string | null>>({})
   const [habits, setHabits] = useState<Habit[]>([])
   const [notes, setNotes] = useState<DayNote[]>([])
   const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set())
@@ -207,6 +210,7 @@ export default function HeutePage() {
       setDay(data.day)
       setHabits(data.habits)
       setNotes(data.notes ?? [])
+      setSymptomIcons(data.symptomIcons || {})
       // Prefill current time (HH:MM) when date changes or page loads
       const now = new Date()
       const hh = String(now.getHours()).padStart(2, '0')
@@ -449,6 +453,7 @@ export default function HeutePage() {
         if (data?.day) setDay(data.day)
         if (data?.notes) setNotes(data.notes)
         if (data?.habits) setHabits(data.habits)
+        if (data?.symptomIcons) setSymptomIcons(data.symptomIcons)
       } catch {}
       setDraftSymptoms({})
       setDraftUserSymptoms({})
@@ -612,7 +617,12 @@ export default function HeutePage() {
             <div className="space-y-3">
               {symptoms.map(type => (
                 <div key={type} className="space-y-1">
-                  <div className="text-sm text-gray-400">{SYMPTOM_LABELS[type]}</div>
+                  <div className="text-sm text-gray-400">
+                    <span className="inline-flex items-center gap-1">
+                      {symptomIcons?.[type] ? <Icon name={symptomIcons[type]} /> : null}
+                      <span>{SYMPTOM_LABELS[type]}</span>
+                    </span>
+                  </div>
                   <NumberPills
                     min={1}
                     max={10}
@@ -637,7 +647,12 @@ export default function HeutePage() {
               {(sortedUserSymptoms && sortedUserSymptoms.length > 0) ? (
                 sortedUserSymptoms.map(us => (
                   <div key={us.id} className="space-y-1">
-                    <div className="text-sm text-gray-400">{us.title}</div>
+                    <div className="text-sm text-gray-400">
+                      <span className="inline-flex items-center gap-1">
+                        {us.icon ? <Icon name={us.icon} /> : null}
+                        <span>{us.title}</span>
+                      </span>
+                    </div>
                     <NumberPills
                       min={1}
                       max={10}
@@ -656,7 +671,12 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Stuhl (Bristol 1–7)</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name={DEFAULT_STOOL_ICON} />
+                <span>Stuhl (Bristol 1–7)</span>
+              </span>
+            </h2>
             <div className="text-xs text-gray-400">
               {' '}
               <a
@@ -825,6 +845,7 @@ export default function HeutePage() {
                         setDay(dd.day)
                         setHabits(dd.habits || [])
                         setNotes(dd.notes || [])
+                        if (dd.symptomIcons) setSymptomIcons(dd.symptomIcons)
                       }
                     } catch {}
                     // Refresh calendar markers for current month

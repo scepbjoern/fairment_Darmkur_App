@@ -10,7 +10,7 @@ export type SaveBarProps = {
   onDiscard: () => void
 }
 
-export function SaveBar({ visible, saving = false, dirtyCount = 0, onSave, onDiscard }: SaveBarProps) {
+export function SaveBar({ visible, saving = false, dirtyCount: _dirtyCount = 0, onSave, onDiscard }: SaveBarProps) {
   if (!visible) return null
   const label = 'Ungespeicherte Änderungen'
   return (
