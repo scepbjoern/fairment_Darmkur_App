@@ -16,6 +16,7 @@ export default function HelpPage() {
           <li><a className="underline" href="#einstellungen">Einstellungen vornehmen</a></li>
           <li><a className="underline" href="#installation">App installieren</a></li>
           <li><a className="underline" href="#spracheingabe">Texte mündlich erfassen</a></li>
+          <li><a className="underline" href="#aenderungen">Was hat sich geändert?</a></li>
         </ul>
       </div>
 
@@ -40,8 +41,11 @@ export default function HelpPage() {
           <li><span className="font-medium">Datum & Kalender:</span> Oben kannst du das Datum wechseln. Im Kalender siehst du, an welchen Tagen Einträge vorhanden sind.</li>
           <li><span className="font-medium">Tages‑Einstellungen:</span> Wähle die Phase (1–3) und die Kategorie (Sanft/Medium/Intensiv) deines Tages.</li>
           <li><span className="font-medium">Symptome:</span> Bewerte verschiedene Bereiche auf einer Skala von 1–10. Eigene Symptome können in den Einstellungen angelegt werden und erscheinen hier ebenfalls.</li>
-          <li><span className="font-medium">Stuhl (Bristol 1–7):</span> Trage deinen Wert schnell per Tippen ein. Eine kurze Erklärung findest du über den verlinkten Guide‑Ausschnitt.</li>
-          <li><span className="font-medium">Gewohnheiten:</span> Hake täglich durchgeführte Gewohnheiten einfach ab. Eigene Gewohnheiten können in den Einstellungen angelegt werden und erscheinen hier ebenfalls.</li>
+          <li><span className="font-medium">Minisparklines (7‑Tage‑Verlauf):</span> Neben jedem Symptom und beim Stuhl siehst du eine kleine blaue Verlaufslinie der letzten sieben Tage. Sie ist rein visuell und neutral.</li>
+          <li><span className="font-medium">Gestern‑Markierung (Symptome & Stuhl):</span> Der gestrige Wert wird <em>ohne Text</em> nur visuell in den Number‑Pills markiert: Ring um die gestrige Zahl, und wenn gestern = heute, ein kleiner Punkt in der Pill.</li>
+          <li><span className="font-medium">Stuhl (Bristol 1–7):</span> Trage deinen Wert schnell per Tippen ein. Eine kurze Erklärung findest du über den verlinkten Guide‑Ausschnitt. Auch hier gelten Sparkline und Gestern‑Markierung wie oben.</li>
+          <li><span className="font-medium">Gewohnheiten:</span> Hake täglich durchgeführte Gewohnheiten einfach ab. Eigene Gewohnheiten können in den Einstellungen angelegt werden und erscheinen hier ebenfalls. Für „Gestern“ gibt es einen dezenten blauen Ring, wenn die Gewohnheit gestern aktiv war und heute noch nicht. Es gibt keinen Punkt‑Indikator.</li>
+          <li><span className="font-medium">Entwürfe & Speichern (Symptome):</span> Änderungen an Number‑Pills werden zunächst als <em>Entwurf</em> gehalten und visuell hervorgehoben. Unten erscheint eine <em>fixierte Speicherleiste</em> (Save‑Bar) mit <strong>Speichern</strong>/<strong>Verwerfen</strong>. Nach der Aktion erscheinen kurze <em>Toasts</em> als Rückmeldung.</li>
           <li><span className="font-medium">Bemerkungen:</span> Schreibe Freitext‑Notizen. Nach dem Speichern wird der Text angezeigt und kann jederzeit wieder bearbeitet oder gelöscht werden.</li>
           <li><span className="font-medium">Ernährungsnotizen:</span> Halte Mahlzeiten mit Uhrzeit fest. Du kannst Fotos hinzufügen (vom Gerät oder direkt mit der Kamera) und sie später betrachten oder entfernen.</li>
         </ul>
@@ -55,6 +59,10 @@ export default function HelpPage() {
           kurze Fragen (Veränderungen, Dankbarkeit, Vorsätze, Bemerkungen). Du kannst Einträge später bearbeiten oder löschen
           und auch Fotos hinzufügen.
         </p>
+        <ul className="list-disc pl-5 text-sm text-gray-300 space-y-1">
+          <li><span className="font-medium">Optionales Körpergewicht:</span> Du kannst ein Gewicht mit <strong>einer Dezimalstelle</strong> erfassen (Format z. B. <code>72,5</code>). Die Eingabe ist optional und wird in der Liste formatiert angezeigt.</li>
+          <li><span className="font-medium">Speichern:</span> Beim Anlegen/Bearbeiten hilft eine <em>Save‑Bar</em> unten am Bildschirm. Du kannst Änderungen gesammelt speichern oder verwerfen; kurze <em>Toasts</em> bestätigen die Aktion.</li>
+        </ul>
       </section>
 
       {/* Auswertungen */}
@@ -96,6 +104,15 @@ export default function HelpPage() {
           <li><span className="font-medium">Eigene Symptome:</span> Zusätzliche, persönliche Symptome anlegen.</li>
           <li><span className="font-medium">Links:</span> Eigene Links hinterlegen, die im Menü unter „Links“ erscheinen.</li>
         </ul>
+        <div className="text-sm text-gray-300">
+          <h3 className="font-medium mt-2">Icons für Gewohnheiten und Symptome</h3>
+          <ul className="list-disc pl-5 space-y-1 mt-1">
+            <li><strong>Gewohnheiten:</strong> In „Einstellungen → Gewohnheiten“ kannst du pro Gewohnheit ein Icon setzen. Erlaubt sind <em>Emoji</em> (z. B. 😊) oder <em>Material‑Symbols</em> (z. B. <code>fitness_center</code>). Vorschau und Speichern‑Button stehen direkt daneben.</li>
+            <li><strong>Standard‑Symptome:</strong> In „Einstellungen → Symptome“ kannst du die Icons der vorgegebenen Symptome <em>nutzerindividuell</em> überschreiben. Ebenfalls Emoji oder Material‑Symbols (z. B. <code>mood</code>).</li>
+            <li><strong>Eigene Symptome:</strong> Für selbst angelegte Symptome lässt sich das Icon ebenso setzen/ändern.</li>
+            <li><strong>Hinweis:</strong> Emoji werden direkt angezeigt. Bei Material‑Symbols gibst du den <em>Namen</em> des Symbols ein; angezeigt wird das entsprechende Symbol (abgerundeter Stil).</li>
+          </ul>
+        </div>
       </section>
 
       {/* Installation */}
