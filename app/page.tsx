@@ -138,6 +138,7 @@ export default function HeutePage() {
   const [mealTime, setMealTime] = useState('')
   const [mealText, setMealText] = useState('')
   const { saving, savedAt, startSaving, doneSaving } = useSaveIndicator()
+  const [forceBarVisible, setForceBarVisible] = useState(false)
   const [viewer, setViewer] = useState<{ noteId: string; index: number } | null>(null)
   const [swipeStartX, setSwipeStartX] = useState<number | null>(null)
   const [reflectionDue, setReflectionDue] = useState<{ due: boolean; daysSince: number } | null>(null)
@@ -485,7 +486,6 @@ export default function HeutePage() {
       setDraftUserSymptoms({})
       setClearedSymptoms(new Set())
       setClearedUserSymptoms(new Set())
-      push('Symptome gespeichert ✓', 'success')
     } finally {
       doneSaving()
     }
@@ -503,7 +503,6 @@ export default function HeutePage() {
     if (!day) return
     await updateDayMeta({ notes: remarksText })
     setRemarksEditing(false)
-    push('Bemerkungen gespeichert ✓', 'success')
   }
 
   async function saveAll() {
@@ -511,7 +510,9 @@ export default function HeutePage() {
       if (unsavedSymptomCount > 0) await saveDraftSymptoms()
       if (remarksDirty) await saveRemarks()
       if (unsavedSymptomCount === 0 && !remarksDirty) return
-      push('Gespeichert ✓', 'success')
+      // Show confirmation inline in SaveBar for 1s
+      setForceBarVisible(true)
+      setTimeout(() => setForceBarVisible(false), 2000)
     } catch (e) {
       console.error('Save failed', e)
       push('Speichern fehlgeschlagen', 'error')
@@ -831,7 +832,7 @@ export default function HeutePage() {
                             <div className="flex items-center gap-1">
                               {editingNoteId === n.id ? (
                                 <>
-                                  <button className="pill text-xs" onClick={() => saveEditNote(n.id)}>Speichern</button>
+                                  <button className="pill text-xs !bg-green-600 !text-white hover:bg-pill-light dark:hover:bg-pill hover:text-gray-900 dark:hover:text-gray-100" onClick={() => saveEditNote(n.id)}>Speichern</button>
                                   <button className="pill text-xs" onClick={cancelEditNote}>Abbrechen</button>
                                 </>
                               ) : (
@@ -992,7 +993,7 @@ export default function HeutePage() {
         </div>
       )}
       <SaveBar
-        visible={combinedDirtyCount > 0}
+        visible={combinedDirtyCount > 0 || saving || forceBarVisible}
         saving={saving}
         dirtyCount={combinedDirtyCount}
         onSave={saveAll}

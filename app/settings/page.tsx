@@ -488,7 +488,7 @@ export default function SettingsPage() {
           </label>
           {profileError && <div className="text-sm text-red-400">{profileError}</div>}
           <div className="flex items-center gap-2">
-            <button type="submit" className="pill">Speichern</button>
+            <button type="submit" className="pill !bg-green-600 !text-white hover:bg-pill-light dark:hover:bg-pill hover:text-gray-900 dark:hover:text-gray-100">Speichern</button>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
 
@@ -629,7 +629,7 @@ export default function SettingsPage() {
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <button className="pill" onClick={saveCapture}>Speichern</button>
+            <button className="pill !bg-green-600 !text-white hover:bg-pill-light dark:hover:bg-pill hover:text-gray-900 dark:hover:text-gray-100" onClick={saveCapture}>Speichern</button>
             <SaveIndicator saving={saving} savedAt={savedAt} />
           </div>
         </div>
@@ -783,7 +783,7 @@ export default function SettingsPage() {
             </label>
             <div className="flex items-center gap-2">
               <button className="pill" onClick={() => setAvatarOpen(false)}>Abbrechen</button>
-              <button className="pill" onClick={saveAvatar} disabled={!avatarImg}>Zuschneiden & Speichern</button>
+              <button className="pill !bg-green-600 !text-white hover:bg-pill-light dark:hover:bg-pill hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-60" onClick={saveAvatar} disabled={!avatarImg}>Zuschneiden & Speichern</button>
             </div>
           </div>
         </div>
