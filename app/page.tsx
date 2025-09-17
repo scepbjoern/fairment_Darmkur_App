@@ -364,6 +364,14 @@ export default function HeutePage() {
     })
     const data = await res.json()
     setDay(data.day)
+    // Refresh inline analytics so stool sparkline updates immediately
+    try {
+      const res2 = await fetch(`/api/analytics/inline?to=${date}`, { credentials: 'same-origin' })
+      if (res2.ok) {
+        const j2 = await res2.json()
+        setInlineData(j2)
+      }
+    } catch {}
     doneSaving()
   }
 
@@ -486,6 +494,14 @@ export default function HeutePage() {
       setDraftUserSymptoms({})
       setClearedSymptoms(new Set())
       setClearedUserSymptoms(new Set())
+      // Refresh inline analytics so symptom sparklines update immediately
+      try {
+        const res2 = await fetch(`/api/analytics/inline?to=${date}`, { credentials: 'same-origin' })
+        if (res2.ok) {
+          const j2 = await res2.json()
+          setInlineData(j2)
+        }
+      } catch {}
     } finally {
       doneSaving()
     }
@@ -668,7 +684,7 @@ export default function HeutePage() {
                         <span>{SYMPTOM_LABELS[type]}</span>
                         {series && (
                           <span className="inline-flex items-center gap-2 ml-2">
-                            <Sparkline data={series} width={72} height={24} />
+                            <Sparkline data={series} width={72} height={24} colorByValue midValue={5} />
                           </span>
                         )}
                       </span>
@@ -708,7 +724,7 @@ export default function HeutePage() {
                           <span>{us.title}</span>
                           {series && (
                             <span className="inline-flex items-center gap-2 ml-2">
-                              <Sparkline data={series} width={72} height={24} />
+                              <Sparkline data={series} width={72} height={24} colorByValue midValue={5} />
                             </span>
                           )}
                         </span>
@@ -739,7 +755,7 @@ export default function HeutePage() {
                 <span>Stuhl (Bristol 1–7)</span>
                 {inlineData?.stool && (
                   <span className="inline-flex items-center gap-2 ml-2">
-                    <Sparkline data={inlineData.stool} width={72} height={24} yMin={1} yMax={7} />
+                    <Sparkline data={inlineData.stool} width={72} height={24} yMin={1} yMax={7} colorByValue midValue={4} />
                   </span>
                 )}
               </span>
