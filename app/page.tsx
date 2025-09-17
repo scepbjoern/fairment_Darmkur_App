@@ -564,7 +564,12 @@ export default function HeutePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Tagebuch {fmtDmyFromYmd(date)}</h1>
+        <h1 className="text-xl font-semibold">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="menu_book" />
+            <span>Tagebuch {fmtDmyFromYmd(date)}</span>
+          </span>
+        </h1>
         <div className="flex items-center gap-2">
           <button aria-label="Vorheriger Tag" className="pill" onClick={() => setDate(d => shiftDate(d, -1))}>‹</button>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-surface border border-slate-700 rounded px-2 py-1 text-sm" />
@@ -573,7 +578,6 @@ export default function HeutePage() {
       </div>
 
       <div className="card p-4 space-y-3">
-        <h2 className="font-medium">Kalender</h2>
         <Calendar date={date} daysWithData={daysWithData} reflectionDays={reflectionDays} onSelect={(d) => setDate(d)} />
       </div>
 
@@ -589,9 +593,14 @@ export default function HeutePage() {
       {day && (
         <>
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Tages-Einstellungen</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="settings" />
+                <span>Tages-Einstellungen</span>
+              </span>
+            </h2>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Phase</span>
+              <span className="text-sm text-gray-400 inline-flex items-center gap-1"><Icon name="cycle" /><span>Phase</span></span>
               {[1, 2, 3].map(p => {
                 const key = `PHASE_${p}` as Day['phase']
                 return (
@@ -602,7 +611,7 @@ export default function HeutePage() {
               })}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">Kategorie</span>
+              <span className="text-sm text-gray-400 inline-flex items-center gap-1"><Icon name="stairs_2" /><span>Kategorie</span></span>
               {(['SANFT', 'MEDIUM', 'INTENSIV'] as const).map(c => (
                 <button key={c} className={`pill ${day.careCategory === c ? 'active' : ''}`} onClick={() => updateDayMeta({ careCategory: c })}>
                   {c.charAt(0) + c.slice(1).toLowerCase()}
@@ -613,7 +622,12 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-4">
-            <h2 className="font-medium">Symptome</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="stethoscope" />
+                <span>Symptome</span>
+              </span>
+            </h2>
             <div className="space-y-3">
               {symptoms.map(type => (
                 <div key={type} className="space-y-1">
@@ -693,12 +707,22 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Gewohnheiten</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="checklist" />
+                <span>Gewohnheiten</span>
+              </span>
+            </h2>
             <HabitChips habits={habits} ticks={day.habitTicks} onToggle={toggleHabit} />
           </div>
 
           <div className="card p-4 space-y-2">
-            <h2 className="font-medium">Bemerkungen</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="comment" />
+                <span>Bemerkungen</span>
+              </span>
+            </h2>
             {remarksEditing ? (
               <>
                 <textarea
@@ -732,7 +756,12 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Ernährungsnotizen</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="menu_book_2" />
+                <span>Ernährungsnotizen</span>
+              </span>
+            </h2>
             <div className="space-y-2">
               {notes.filter(n => n.type === 'MEAL').length === 0 ? (
                 <div className="text-sm text-gray-400">Noch keine Einträge.</div>
@@ -824,7 +853,12 @@ export default function HeutePage() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <h2 className="font-medium">Tag zurücksetzen</h2>
+            <h2 className="font-medium">
+              <span className="inline-flex items-center gap-1">
+                <Icon name="warning" />
+                <span>Tag zurücksetzen</span>
+              </span>
+            </h2>
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-400">Alle Angaben (Symptome, Stuhl, Gewohnheiten, Notizen) für diesen Tag löschen.</div>
               <button

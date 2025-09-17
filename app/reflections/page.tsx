@@ -1,5 +1,6 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
 import { SaveBar } from '@/components/SaveBar'
@@ -181,6 +182,12 @@ export default function ReflectionsPage() {
 
   return (
     <div className="space-y-6">
+      <h1 className="text-xl font-semibold">
+        <span className="inline-flex items-center gap-1">
+          <Icon name="rate_review" />
+          <span>Reflexion</span>
+        </span>
+      </h1>
       <div className="card p-4 space-y-3">
         <h2 className="font-medium">Neue Reflexion</h2>
         <div className="flex flex-wrap items-center gap-3 text-sm">

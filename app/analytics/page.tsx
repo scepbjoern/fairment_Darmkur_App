@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { Icon } from '@/components/Icon'
 import {
   ResponsiveContainer,
   LineChart,
@@ -472,7 +473,12 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Auswertungen</h1>
+      <h1 className="text-xl font-semibold">
+        <span className="inline-flex items-center gap-1">
+          <Icon name="bar_chart" />
+          <span>Auswertungen</span>
+        </span>
+      </h1>
       <div className="card p-4">
         <div className="flex gap-2 mb-4">
           <button className={`pill ${tab==='weekly' ? 'active' : ''}`} onClick={() => setTab('weekly')}>Woche</button>

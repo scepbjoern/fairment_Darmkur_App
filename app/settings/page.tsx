@@ -465,10 +465,20 @@ export default function SettingsPage() {
   return (
     <>
       <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Einstellungen</h1>
+      <h1 className="text-xl font-semibold">
+        <span className="inline-flex items-center gap-1">
+          <Icon name="settings" />
+          <span>Einstellungen</span>
+        </span>
+      </h1>
 
       <div className="card p-4 space-y-3">
-        <h2 className="font-medium">Profil</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="manage_accounts" />
+            <span>Profil</span>
+          </span>
+        </h2>
         <form onSubmit={saveProfile} className="grid gap-3 max-w-md">
           <label className="text-sm text-gray-400">Anzeigename
             <input className="w-full bg-background border border-slate-700 rounded px-2 py-1" value={displayName} onChange={e => setDisplayName(e.target.value)} />
@@ -501,7 +511,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="card p-4 space-y-3 max-w-md">
-        <h2 className="font-medium">UI</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="palette" />
+            <span>UI</span>
+          </span>
+        </h2>
         <div className="flex items-center gap-3">
           <label className="inline-flex items-center gap-2 text-sm">
             <span>Theme</span>
@@ -515,7 +530,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="card p-4 space-y-3">
-        <h2 className="font-medium">Gewohnheiten</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="checklist" />
+            <span>Gewohnheiten</span>
+          </span>
+        </h2>
         <div className="max-w-xl space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
             <label className="md:col-span-4 text-sm">
@@ -566,7 +586,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="card p-4 space-y-3 max-w-xl">
-        <h2 className="font-medium">Erfassung</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="tune" />
+            <span>Erfassung</span>
+          </span>
+        </h2>
         <div className="grid gap-3">
           <label className="inline-flex items-center gap-2 text-sm">
             <span>Autosave</span>
@@ -611,7 +636,12 @@ export default function SettingsPage() {
       </div>
 
       <div className="card p-4 space-y-3 max-w-xl">
-        <h2 className="font-medium">Eigene Symptome</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="stethoscope" />
+            <span>Symptome</span>
+          </span>
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
           <label className="md:col-span-4 text-sm">
             <div className="text-gray-400">Name</div>
@@ -626,51 +656,51 @@ export default function SettingsPage() {
           </div>
         </div>
         <ul className="space-y-2">
-          {userSymptoms.length === 0 ? (
-            <li className="text-sm text-gray-400">Noch keine eigenen Symptome.</li>
-          ) : (
-            userSymptoms.map(s => (
-              <li key={s.id} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="inline-flex items-center justify-center w-6">{s.icon ? <Icon name={s.icon} /> : null}</span>
-                  <span className="font-medium">{s.title}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-xs">
-                    <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={userSymptomIconDrafts[s.id] ?? (s.icon ?? '')} onChange={e => setUserSymptomIconDrafts(d => ({ ...d, [s.id]: e.target.value }))} placeholder="Emoji/Symbol" />
-                  </label>
-                  <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-surface border border-slate-700"><Icon name={(userSymptomIconDrafts[s.id] ?? s.icon) || ''} /></span>
-                  <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveUserSymptomIcon(s.id, userSymptomIconDrafts[s.id] ?? (s.icon ?? ''))}>
-                    <Icon name="save" />
-                  </button>
-                  <button className="pill" title="Löschen" aria-label="Löschen" onClick={() => deleteUserSymptom(s.id)}>
-                    <Icon name="delete" />
-                  </button>
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
-
-      <div className="card p-4 space-y-3 max-w-xl">
-        <h2 className="font-medium">Standard-Symptome</h2>
-        <div className="text-sm text-gray-400">Lege Icons/Emojis für die Standard-Symptome fest. Diese gelten nur für dich.</div>
-        <ul className="space-y-2">
           {Object.entries(STD_SYMPTOM_LABELS).map(([type, label]) => {
             const current = stdSymptomIconDrafts[type] ?? (stdSymptomIcons[type] ?? '')
             return (
-              <li key={type} className="flex items-center justify-between text-sm gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-6"><Icon name={current} /></span>
-                  <span className="font-medium">{label}</span>
-                  <span className="text-xs text-gray-500">({type})</span>
+              <li key={`std-${type}`} className="text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6"><Icon name={current} /></span>
+                    <span className="font-medium">{label}</span>
+                    <span className="ml-2 text-xs text-gray-400">Standard</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs">
+                      <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={current} onChange={e => setStdSymptomIconDrafts(d => ({ ...d, [type]: e.target.value }))} placeholder="Emoji/Symbol" />
+                    </label>
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-surface border border-slate-700"><Icon name={current || ''} /></span>
+                    <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveStdSymptomIcon(type, current)}>
+                      <Icon name="save" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={current} onChange={e => setStdSymptomIconDrafts(d => ({ ...d, [type]: e.target.value }))} placeholder="Emoji/Symbol" />
-                  <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveStdSymptomIcon(type, current)}>
-                    <Icon name="save" />
-                  </button>
+              </li>
+            )
+          })}
+          {userSymptoms.map(s => {
+            const current = userSymptomIconDrafts[s.id] ?? (s.icon ?? '')
+            return (
+              <li key={`usr-${s.id}`} className="text-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="inline-flex items-center justify-center w-6">{current ? <Icon name={current} /> : null}</span>
+                    <span className="font-medium">{s.title}</span>
+                    <span className="ml-2 text-xs text-gray-400">Eigen</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs">
+                      <input className="w-44 bg-background border border-slate-700 rounded px-2 py-1" value={current} onChange={e => setUserSymptomIconDrafts(d => ({ ...d, [s.id]: e.target.value }))} placeholder="Emoji/Symbol" />
+                    </label>
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-surface border border-slate-700"><Icon name={current || ''} /></span>
+                    <button className="pill" title="Icon speichern" aria-label="Icon speichern" onClick={() => saveUserSymptomIcon(s.id, current)}>
+                      <Icon name="save" />
+                    </button>
+                    <button className="pill" title="Löschen" aria-label="Löschen" onClick={() => deleteUserSymptom(s.id)}>
+                      <Icon name="delete" />
+                    </button>
+                  </div>
                 </div>
               </li>
             )
@@ -678,7 +708,12 @@ export default function SettingsPage() {
         </ul>
       </div>
       <div className="card p-4 space-y-3 max-w-xl">
-        <h2 className="font-medium">Links</h2>
+        <h2 className="font-medium">
+          <span className="inline-flex items-center gap-1">
+            <Icon name="add_link" />
+            <span>Links</span>
+          </span>
+        </h2>
         <div className="text-sm text-gray-400">Hier kannst du eigene Links anlegen, die im Menü unter „Links“ erscheinen.</div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
           <label className="md:col-span-2 text-sm">
