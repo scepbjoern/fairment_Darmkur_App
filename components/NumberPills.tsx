@@ -10,6 +10,7 @@ export function NumberPills({
   ariaLabel,
   unsaved = false,
   onClear,
+  previousValue,
 }: {
   min: number
   max: number
@@ -19,6 +20,7 @@ export function NumberPills({
   ariaLabel?: string
   unsaved?: boolean
   onClear?: () => void
+  previousValue?: number | null
 }) {
   // Use fixed square dimensions and rounded-full to achieve perfect circles
   const sizeClass =
@@ -26,12 +28,12 @@ export function NumberPills({
     size === 'lg' ? 'w-12 h-12 text-lg' :
     'w-10 h-10'
   return (
-    <div className="flex gap-2 overflow-x-auto">
+    <div className="flex gap-2 overflow-x-auto my-2 py-1">
       {Array.from({ length: max - min + 1 }, (_, i) => i + min).map(n => (
         <button
           key={n}
           // Avoid the shared .pill padding (px/py) to prevent ellipses; construct styles directly
-          className={`rounded-full bg-pill text-gray-200 inline-flex items-center justify-center border border-slate-700 ${sizeClass} ${value === n ? `${unsaved ? 'bg-primary/80' : 'bg-primary'} text-black ${unsaved ? 'border-blue-400' : 'border-transparent'}` : ''}`}
+          className={`relative rounded-full bg-pill text-gray-200 inline-flex items-center justify-center border border-slate-700 ${sizeClass} ${value === n ? `${unsaved ? 'bg-primary/80' : 'bg-primary'} text-black ${unsaved ? 'border-blue-400' : 'border-transparent'}` : ''} ${previousValue === n && value !== n ? 'ring-2 ring-sky-400/60' : ''}`}
           aria-label={ariaLabel ? `${ariaLabel} ${n}` : undefined}
           onClick={() => {
             if (value === n) {
@@ -42,6 +44,9 @@ export function NumberPills({
           }}
         >
           {n}
+          {previousValue === n && value === n ? (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-sky-400 border border-slate-900" />
+          ) : null}
         </button>
       ))}
     </div>

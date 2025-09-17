@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useMemo, useState } from 'react'
 import { NumberPills } from '@/components/NumberPills'
+import { Sparkline } from '@/components/Sparkline'
 import { HabitChips } from '@/components/HabitChips'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
 import { CameraPicker } from '@/components/CameraPicker'
@@ -152,6 +153,16 @@ export default function HeutePage() {
   const [clearedSymptoms, setClearedSymptoms] = useState<Set<string>>(new Set())
   const [clearedUserSymptoms, setClearedUserSymptoms] = useState<Set<string>>(new Set())
 
+  // Inline analytics (7-day series + yesterday values)
+  type InlineData = {
+    days: string[]
+    symptoms: Record<string, (number | null)[]>
+    stool: (number | null)[]
+    customSymptoms?: { defs: { id: string; title: string }[]; series: Record<string, (number | null)[]> }
+    yesterday: { standard: Record<string, number | null>; custom: Record<string, number | null>; stool: number | null; habits: string[] }
+  }
+  const [inlineData, setInlineData] = useState<InlineData | null>(null)
+
   function startEditNote(n: DayNote) {
     setEditingNoteId(n.id)
     setEditingTime(fmtHMLocal(n.occurredAtIso))
@@ -218,6 +229,21 @@ export default function HeutePage() {
       setMealTime(`${hh}:${mm}`)
     }
     load()
+  }, [date])
+
+  // Load inline analytics with small debounce and abort on date change
+  useEffect(() => {
+    let aborted = false
+    const ctrl = new AbortController()
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/analytics/inline?to=${date}`, { credentials: 'same-origin', signal: ctrl.signal })
+        if (!res.ok) return
+        const j = await res.json()
+        if (!aborted) setInlineData(j)
+      } catch {}
+    }, 150)
+    return () => { aborted = true; ctrl.abort(); clearTimeout(t) }
   }, [date])
 
   // Check if a reflection is due (business logic: > 6 Tage)
@@ -561,6 +587,7 @@ export default function HeutePage() {
     return arr.sort((a, b) => collator.compare(a.title, b.title))
   }, [day?.userSymptoms, collator])
 
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -628,26 +655,36 @@ export default function HeutePage() {
                 <span>Symptome</span>
               </span>
             </h2>
-            <div className="space-y-3">
-              {symptoms.map(type => (
-                <div key={type} className="space-y-1">
-                  <div className="text-sm text-gray-400">
-                    <span className="inline-flex items-center gap-1">
-                      {symptomIcons?.[type] ? <Icon name={symptomIcons[type]} /> : null}
-                      <span>{SYMPTOM_LABELS[type]}</span>
-                    </span>
+            <div className="space-y-0">
+              {symptoms.map(type => {
+                const series = inlineData?.symptoms?.[type]
+                const prev = inlineData?.yesterday?.standard?.[type] ?? null
+                return (
+                  <div key={type} className="space-y-1 !mb-[30px]">
+                    <div className="text-sm text-gray-400">
+                      <span className="inline-flex items-center gap-2">
+                        {symptomIcons?.[type] ? <Icon name={symptomIcons[type]} /> : null}
+                        <span>{SYMPTOM_LABELS[type]}</span>
+                        {series && (
+                          <span className="inline-flex items-center gap-2 ml-2">
+                            <Sparkline data={series} width={72} height={24} />
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <NumberPills
+                      min={1}
+                      max={10}
+                      value={clearedSymptoms.has(type) ? undefined : (draftSymptoms[type] ?? day.symptoms[type])}
+                      onChange={n => setDraftSymptom(type, n)}
+                      onClear={() => clearDraftSymptom(type)}
+                      ariaLabel={SYMPTOM_LABELS[type]}
+                      unsaved={draftSymptoms[type] !== undefined || clearedSymptoms.has(type)}
+                      previousValue={typeof prev === 'number' ? prev : null}
+                    />
                   </div>
-                  <NumberPills
-                    min={1}
-                    max={10}
-                    value={clearedSymptoms.has(type) ? undefined : (draftSymptoms[type] ?? day.symptoms[type])}
-                    onChange={n => setDraftSymptom(type, n)}
-                    onClear={() => clearDraftSymptom(type)}
-                    ariaLabel={SYMPTOM_LABELS[type]}
-                    unsaved={draftSymptoms[type] !== undefined || clearedSymptoms.has(type)}
-                  />
-                </div>
-              ))}
+                )
+              })}
             </div>
             {/* Divider and heading for user-defined symptoms */}
             {(day.userSymptoms && day.userSymptoms.length > 0) && (
@@ -657,27 +694,37 @@ export default function HeutePage() {
               </>
             )}
             {/* Custom user-defined symptoms */}
-            <div className="space-y-3">
+            <div className="space-y-0">
               {(sortedUserSymptoms && sortedUserSymptoms.length > 0) ? (
-                sortedUserSymptoms.map(us => (
-                  <div key={us.id} className="space-y-1">
-                    <div className="text-sm text-gray-400">
-                      <span className="inline-flex items-center gap-1">
-                        {us.icon ? <Icon name={us.icon} /> : null}
-                        <span>{us.title}</span>
-                      </span>
+                sortedUserSymptoms.map(us => {
+                  const series = inlineData?.customSymptoms?.series?.[us.id]
+                  const prev = inlineData?.yesterday?.custom?.[us.id] ?? null
+                  return (
+                    <div key={us.id} className="space-y-1 !mb-[30px]">
+                      <div className="text-sm text-gray-400">
+                        <span className="inline-flex items-center gap-2">
+                          {us.icon ? <Icon name={us.icon} /> : null}
+                          <span>{us.title}</span>
+                          {series && (
+                            <span className="inline-flex items-center gap-2 ml-2">
+                              <Sparkline data={series} width={72} height={24} />
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <NumberPills
+                        min={1}
+                        max={10}
+                        value={clearedUserSymptoms.has(us.id) ? undefined : (draftUserSymptoms[us.id] ?? us.score)}
+                        onChange={n => setDraftUserSymptom(us.id, n)}
+                        onClear={() => clearDraftUserSymptom(us.id)}
+                        ariaLabel={us.title}
+                        unsaved={draftUserSymptoms[us.id] !== undefined || clearedUserSymptoms.has(us.id)}
+                        previousValue={typeof prev === 'number' ? prev : null}
+                      />
                     </div>
-                    <NumberPills
-                      min={1}
-                      max={10}
-                      value={clearedUserSymptoms.has(us.id) ? undefined : (draftUserSymptoms[us.id] ?? us.score)}
-                      onChange={n => setDraftUserSymptom(us.id, n)}
-                      onClear={() => clearDraftUserSymptom(us.id)}
-                      ariaLabel={us.title}
-                      unsaved={draftUserSymptoms[us.id] !== undefined || clearedUserSymptoms.has(us.id)}
-                    />
-                  </div>
-                ))
+                  )
+                })
               ) : (
                 <div className="text-sm text-gray-500">Noch keine eigenen Symptome. Lege welche in den Einstellungen an.</div>
               )}
@@ -689,6 +736,11 @@ export default function HeutePage() {
               <span className="inline-flex items-center gap-1">
                 <Icon name={DEFAULT_STOOL_ICON} />
                 <span>Stuhl (Bristol 1–7)</span>
+                {inlineData?.stool && (
+                  <span className="inline-flex items-center gap-2 ml-2">
+                    <Sparkline data={inlineData.stool} width={72} height={24} yMin={1} yMax={7} />
+                  </span>
+                )}
               </span>
             </h2>
             <div className="text-xs text-gray-400">
@@ -703,7 +755,7 @@ export default function HeutePage() {
               </a>
               .
             </div>
-            <NumberPills min={1} max={7} value={day.stool} onChange={updateStool} ariaLabel="Bristol" />
+            <NumberPills min={1} max={7} value={day.stool} onChange={updateStool} ariaLabel="Bristol" previousValue={typeof inlineData?.yesterday?.stool === 'number' ? inlineData!.yesterday.stool : null} />
           </div>
 
           <div className="card p-4 space-y-3">
@@ -713,7 +765,7 @@ export default function HeutePage() {
                 <span>Gewohnheiten</span>
               </span>
             </h2>
-            <HabitChips habits={habits} ticks={day.habitTicks} onToggle={toggleHabit} />
+            <HabitChips habits={habits} ticks={day.habitTicks} onToggle={toggleHabit} yesterdaySelectedIds={inlineData?.yesterday?.habits || []} />
           </div>
 
           <div className="card p-4 space-y-2">
@@ -762,7 +814,7 @@ export default function HeutePage() {
                 <span>Ernährungsnotizen</span>
               </span>
             </h2>
-            <div className="space-y-2">
+            <div className="space-y-[10px]">
               {notes.filter(n => n.type === 'MEAL').length === 0 ? (
                 <div className="text-sm text-gray-400">Noch keine Einträge.</div>
               ) : (
