@@ -755,7 +755,7 @@ export default function HeutePage() {
                 <span>Stuhl (Bristol 1–7)</span>
                 {inlineData?.stool && (
                   <span className="inline-flex items-center gap-2 ml-2">
-                    <Sparkline data={inlineData.stool} width={72} height={24} yMin={1} yMax={7} colorByValue midValue={4} />
+                    <Sparkline data={inlineData.stool} width={72} height={24} yMin={1} yMax={7} colorByValue midValue={4} scheme="stool" />
                   </span>
                 )}
               </span>
