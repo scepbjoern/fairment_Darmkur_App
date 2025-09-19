@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.3.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.2.0...v1.3.0) (2025-09-19)
+
+
+### Features
+
+* add color-coded sparklines for symptom and stool tracking visualizations ([a92af71](https://github.com/scepbjoern/fairment_Darmkur_App/commit/a92af710adff97145714d9dcce63665cc433d7e4))
+* add stool-specific color scheme to sparkline visualization ([bc1212d](https://github.com/scepbjoern/fairment_Darmkur_App/commit/bc1212d0b206e8562adb269618838b644ea2d646))
+
+
+### Bug Fixes
+
+* treat bristol value 99 as "no stool" and exclude from analytics calculations ([ed8e7f1](https://github.com/scepbjoern/fairment_Darmkur_App/commit/ed8e7f1d6babdcf394e7234deededbd24d37e549))
+
 ## [1.2.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.1.0...v1.2.0) (2025-09-17)
 
 
