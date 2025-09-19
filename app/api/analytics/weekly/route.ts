@@ -176,9 +176,10 @@ export async function GET(req: NextRequest) {
       } else {
         wellBeingIndex.push(null)
       }
-      // Stool
+      // Stool (treat 99 as "kein Stuhl" → null)
       const dayId = dayIdByKey.get(key)
-      stool.push(dayId ? stoolByDayId.get(dayId) ?? null : null)
+      const sv = dayId ? stoolByDayId.get(dayId) ?? null : null
+      stool.push(sv === 99 ? null : sv)
       // Habits
       if (activeHabitsCount > 0 && dayId) {
         const done = doneByDayId.get(dayId) || 0

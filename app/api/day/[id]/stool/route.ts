@@ -9,7 +9,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   const prisma = getPrisma()
   const body = await req.json().catch(() => ({}))
   const bristol = Number(body.bristol)
-  if (!(bristol >= 1 && bristol <= 7)) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
+  if (!((bristol >= 1 && bristol <= 7) || bristol === 99)) return NextResponse.json({ error: 'Bad request' }, { status: 400 })
 
   const day = await prisma.dayEntry.findUnique({ where: { id } })
   if (!day) return NextResponse.json({ error: 'Not found' }, { status: 404 })

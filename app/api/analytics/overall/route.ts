@@ -124,7 +124,8 @@ export async function GET(req: NextRequest) {
       for (const t of SYMPTOMS) {
         symptomSeries[t].push(perTypeByKey.get(t)?.get(key) ?? null)
       }
-      stool.push(dayId ? stoolByDayId.get(dayId) ?? null : null)
+      const sv = dayId ? stoolByDayId.get(dayId) ?? null : null
+      stool.push(sv === 99 ? null : sv)
       if (activeHabitsCount > 0 && dayId) {
         const done = doneByDayId.get(dayId) || 0
         habitFulfillment.push(Number((done / activeHabitsCount).toFixed(3)))

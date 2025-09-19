@@ -117,11 +117,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Stool avg
+    // Stool avg (exclude 99 = "kein Stuhl")
     let stoolAvg: number | null = null
-    if (stoolRows.length) {
-      const sum = stoolRows.reduce((a: number, b: { bristol: number }) => a + b.bristol, 0)
-      stoolAvg = Number((sum / stoolRows.length).toFixed(2))
+    const stoolVals = stoolRows.filter((r: { bristol: number }) => r.bristol !== 99).map((r: { bristol: number }) => r.bristol)
+    if (stoolVals.length) {
+      const sum = stoolVals.reduce((a: number, b: number) => a + b, 0)
+      stoolAvg = Number((sum / stoolVals.length).toFixed(2))
     }
 
     // Series per day
@@ -170,8 +171,9 @@ export async function GET(req: NextRequest) {
       for (const t of SYMPTOMS) {
         symptomSeries[t].push(perTypeByKey.get(t)?.get(key) ?? null)
       }
-      // Stool
-      stoolSeries.push(dayId ? stoolByDayId.get(dayId) ?? null : null)
+      // Stool (treat 99 as "kein Stuhl" → null)
+      const sv = dayId ? stoolByDayId.get(dayId) ?? null : null
+      stoolSeries.push(sv === 99 ? null : sv)
       // Habits
       if (activeHabitsCount > 0 && dayId) {
         const done = doneByDayId.get(dayId) || 0

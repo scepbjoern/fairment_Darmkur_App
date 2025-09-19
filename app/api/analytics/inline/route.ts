@@ -139,7 +139,8 @@ export async function GET(req: NextRequest) {
     for (const r of stoolRows) stoolByDayId.set(r.dayEntryId, r.bristol)
     const stool: (number | null)[] = keys.map(k => {
       const id = dayIdByKey.get(k)
-      return id ? (stoolByDayId.get(id) ?? null) : null
+      const v = id ? (stoolByDayId.get(id) ?? null) : null
+      return v === 99 ? null : v
     })
 
     // Yesterday values (relative to 'to')

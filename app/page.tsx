@@ -772,7 +772,16 @@ export default function HeutePage() {
               </a>
               .
             </div>
-            <NumberPills min={1} max={7} value={day.stool} onChange={updateStool} ariaLabel="Bristol" previousValue={typeof inlineData?.yesterday?.stool === 'number' ? inlineData!.yesterday.stool : null} />
+            <NumberPills
+              min={1}
+              max={7}
+              value={day.stool}
+              onChange={updateStool}
+              ariaLabel="Bristol"
+              previousValue={typeof inlineData?.yesterday?.stool === 'number' ? inlineData!.yesterday.stool : null}
+              includeDashFirst
+              dashValue={99}
+            />
           </div>
 
           <div className="card p-4 space-y-3">
