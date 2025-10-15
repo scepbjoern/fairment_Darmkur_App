@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.4.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.3.0...v1.4.0) (2025-10-15)
+
+
+### Features
+
+* copy previous phase when creating new day entry ([88a7c0e](https://github.com/scepbjoern/fairment_Darmkur_App/commit/88a7c0e93a94e1b188fd4bc41702fa346ac5b493))
+
 ## [1.3.0](https://github.com/scepbjoern/fairment_Darmkur_App/compare/v1.2.0...v1.3.0) (2025-09-19)
 
 
