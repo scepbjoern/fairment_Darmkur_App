@@ -35,13 +35,13 @@ export async function GET(req: NextRequest) {
     const prev = await prisma.dayEntry.findFirst({
       where: { userId: user.id, date: { lt: start } },
       orderBy: { date: 'desc' },
-      select: { careCategory: true },
+      select: { careCategory: true, phase: true },
     })
     day = await prisma.dayEntry.create({
       data: {
         userId: user.id,
         date: start,
-        phase: 'PHASE_1',
+        phase: (prev?.phase ?? 'PHASE_1') as Phase,
         careCategory: (prev?.careCategory ?? 'SANFT') as CareCategory,
       },
     })
