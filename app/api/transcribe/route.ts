@@ -1,18 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Together from 'together-ai'
 
+const whisperModels = ['openai/whisper-large-v3'] as const
+type WhisperModel = (typeof whisperModels)[number]
+
+function isWhisperModel(model: string): model is WhisperModel {
+  return whisperModels.includes(model as WhisperModel)
+}
+
 // POST /api/transcribe
 // FormData: file (audio/*), model (string)
 export async function POST(req: NextRequest) {
   try {
     const form = await req.formData()
     const file = form.get('file') as File | null
-    const model = (form.get('model') as string | null) || 'openai/whisper-large-v3'
+    const model = (form.get('model') as string | null) || whisperModels[0]
 
     if (!file) return NextResponse.json({ error: 'Missing file' }, { status: 400 })
 
     // Determine which service to use based on model
-    if (model.startsWith('openai/whisper')) {
+    if (isWhisperModel(model)) {
       // Use TogetherAI for Whisper models
       const apiKey = process.env.TOGETHERAI_API_KEY
       if (!apiKey) {
@@ -24,7 +31,7 @@ export async function POST(req: NextRequest) {
       const together = new Together({ apiKey })
 
       const response = await together.audio.transcriptions.create({
-        model: model,
+        model,
         language: 'de',
         file: new File([buffer], file.name || 'recording.webm', { type: file.type || 'audio/webm' }),
       })
