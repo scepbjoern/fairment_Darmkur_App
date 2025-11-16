@@ -26,10 +26,12 @@ export function MicrophoneButton(props: {
 
   const defaultModels = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_TRANSCRIBE_MODELS)
     ? String(process.env.NEXT_PUBLIC_TRANSCRIBE_MODELS).split(',').map(s => s.trim()).filter(Boolean)
-    : ['gpt-4o-mini-transcribe', 'gpt-4o-transcribe', 'whisper-1']
+    : ['openai/whisper-large-v3', 'gpt-4o-mini-transcribe', 'gpt-4o-transcribe']
 
   const [selectedModel, setSelectedModel] = useState<string>(
-    initialModel || (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_OPENAI_TRANSCRIBE_MODEL)
+    initialModel || (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_TOGETHERAI_TRANSCRIBE_MODEL)
+      || (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_OPENAI_TRANSCRIBE_MODEL)
+      || (typeof process !== 'undefined' && process.env?.TOGETHERAI_TRANSCRIBE_MODEL)
       || (typeof process !== 'undefined' && process.env?.OPENAI_TRANSCRIBE_MODEL)
       || defaultModels[0]
   )
