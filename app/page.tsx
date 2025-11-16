@@ -6,6 +6,7 @@ import { HabitChips } from '@/components/HabitChips'
 import { SaveIndicator, useSaveIndicator } from '@/components/SaveIndicator'
 import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
+import { ImproveTextButton } from '@/components/ImproveTextButton'
 import { SaveBar } from '@/components/SaveBar'
 import { Toasts, useToasts } from '@/components/Toast'
 import { Icon } from '@/components/Icon'
@@ -816,6 +817,11 @@ export default function HeutePage() {
                     className="text-gray-300 hover:text-gray-100"
                     compact
                   />
+                  <ImproveTextButton
+                    text={remarksText}
+                    onImprovedText={(t) => setRemarksText(t)}
+                    className="text-gray-300 hover:text-gray-100"
+                  />
                   {(day?.notes && day.notes.trim()) ? (
                     <button className="pill" onClick={clearRemarks}>Löschen</button>
                   ) : null}
@@ -874,7 +880,21 @@ export default function HeutePage() {
                                 <span className="text-xs text-gray-400">Zeit</span>
                                 <input type="time" value={editingTime} onChange={e => setEditingTime(e.target.value)} className="bg-background border border-slate-700 rounded px-2 py-1 text-xs" />
                               </div>
-                              <textarea value={editingText} onChange={e => setEditingText(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2 text-xs leading-5" rows={3} />
+                              <div className="space-y-1">
+                                <textarea value={editingText} onChange={e => setEditingText(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2 text-xs leading-5" rows={3} />
+                                <div className="flex items-center gap-2">
+                                  <MicrophoneButton
+                                    onText={(t) => setEditingText(prev => prev ? (prev + ' ' + t) : t)}
+                                    className="text-gray-300 hover:text-gray-100 text-xs"
+                                    compact
+                                  />
+                                  <ImproveTextButton
+                                    text={editingText}
+                                    onImprovedText={(t) => setEditingText(t)}
+                                    className="text-gray-300 hover:text-gray-100 text-xs"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ) : (
                             <div className="whitespace-pre-wrap text-xs leading-5">{n.text}</div>
@@ -923,6 +943,11 @@ export default function HeutePage() {
                   onText={(t) => setMealText(prev => prev ? (prev + ' ' + t) : t)}
                   className="text-gray-300 hover:text-gray-100 text-xs"
                   compact
+                />
+                <ImproveTextButton
+                  text={mealText}
+                  onImprovedText={(t) => setMealText(t)}
+                  className="text-gray-300 hover:text-gray-100 text-xs"
                 />
                 <button className="pill w-full sm:w-auto" onClick={addMealNote} disabled={!mealText.trim()}>Hinzufügen</button>
               </div>

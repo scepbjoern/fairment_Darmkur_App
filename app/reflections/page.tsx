@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Icon } from '@/components/Icon'
 import { CameraPicker } from '@/components/CameraPicker'
 import { MicrophoneButton } from '@/components/MicrophoneButton'
+import { ImproveTextButton } from '@/components/ImproveTextButton'
 import { SaveBar } from '@/components/SaveBar'
 import { Toasts, useToasts } from '@/components/Toast'
 import { useSaveIndicator } from '@/components/SaveIndicator'
@@ -211,28 +212,40 @@ export default function ReflectionsPage() {
           <div>
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Was hat sich verändert?</span>
-              <MicrophoneButton onText={(t) => setChanged(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+              <div className="flex items-center gap-2">
+                <MicrophoneButton onText={(t) => setChanged(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                <ImproveTextButton text={changed} onImprovedText={(t) => setChanged(t)} className="pill text-xs" />
+              </div>
             </div>
             <textarea value={changed} onChange={e => setChanged(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Wofür bin ich dankbar?</span>
-              <MicrophoneButton onText={(t) => setGratitude(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+              <div className="flex items-center gap-2">
+                <MicrophoneButton onText={(t) => setGratitude(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                <ImproveTextButton text={gratitude} onImprovedText={(t) => setGratitude(t)} className="pill text-xs" />
+              </div>
             </div>
             <textarea value={gratitude} onChange={e => setGratitude(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Vorsätze</span>
-              <MicrophoneButton onText={(t) => setVows(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+              <div className="flex items-center gap-2">
+                <MicrophoneButton onText={(t) => setVows(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                <ImproveTextButton text={vows} onImprovedText={(t) => setVows(t)} className="pill text-xs" />
+              </div>
             </div>
             <textarea value={vows} onChange={e => setVows(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
           </div>
           <div>
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Sonstige Bemerkungen</span>
-              <MicrophoneButton onText={(t) => setRemarks(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+              <div className="flex items-center gap-2">
+                <MicrophoneButton onText={(t) => setRemarks(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                <ImproveTextButton text={remarks} onImprovedText={(t) => setRemarks(t)} className="pill text-xs" />
+              </div>
             </div>
             <textarea value={remarks} onChange={e => setRemarks(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
           </div>
@@ -280,28 +293,40 @@ export default function ReflectionsPage() {
                     <div>
                       <div className="flex items-center justify-between text-xs text-gray-400">
                         <span>Was hat sich verändert?</span>
-                        <MicrophoneButton onText={(t) => setEChanged(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                        <div className="flex items-center gap-2">
+                          <MicrophoneButton onText={(t) => setEChanged(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                          <ImproveTextButton text={eChanged} onImprovedText={(t) => setEChanged(t)} className="pill text-xs" />
+                        </div>
                       </div>
                       <textarea value={eChanged} onChange={e => setEChanged(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs text-gray-400">
                         <span>Wofür bin ich dankbar?</span>
-                        <MicrophoneButton onText={(t) => setEGratitude(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                        <div className="flex items-center gap-2">
+                          <MicrophoneButton onText={(t) => setEGratitude(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                          <ImproveTextButton text={eGratitude} onImprovedText={(t) => setEGratitude(t)} className="pill text-xs" />
+                        </div>
                       </div>
                       <textarea value={eGratitude} onChange={e => setEGratitude(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs text-gray-400">
                         <span>Vorsätze</span>
-                        <MicrophoneButton onText={(t) => setEVows(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                        <div className="flex items-center gap-2">
+                          <MicrophoneButton onText={(t) => setEVows(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                          <ImproveTextButton text={eVows} onImprovedText={(t) => setEVows(t)} className="pill text-xs" />
+                        </div>
                       </div>
                       <textarea value={eVows} onChange={e => setEVows(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-xs text-gray-400">
                         <span>Sonstige Bemerkungen</span>
-                        <MicrophoneButton onText={(t) => setERemarks(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                        <div className="flex items-center gap-2">
+                          <MicrophoneButton onText={(t) => setERemarks(prev => prev ? (prev + ' ' + t) : t)} className="pill text-xs" compact />
+                          <ImproveTextButton text={eRemarks} onImprovedText={(t) => setERemarks(t)} className="pill text-xs" />
+                        </div>
                       </div>
                       <textarea value={eRemarks} onChange={e => setERemarks(e.target.value)} className="w-full bg-background border border-slate-700 rounded p-2" rows={3} />
                     </div>
